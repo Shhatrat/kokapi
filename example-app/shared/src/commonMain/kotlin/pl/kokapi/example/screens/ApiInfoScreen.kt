@@ -60,17 +60,16 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        runCatching { kokapi.apiSrv.installation() }
-            .onSuccess { installation = it }
-            .onFailure { installationError = it.message }
-
-        runCatching { kokapi.apiSrv.stats() }
-            .onSuccess { stats = it }
-            .onFailure { statsError = it.message }
-
-        runCatching { kokapi.replicate.info() }
-            .onSuccess { replicateInfo = it }
-            .onFailure { replicateError = it.message }
+        scope.launch {
+            runCatching { kokapi.apiSrv.installation() }
+                .onSuccess { installation = it }
+                .onFailure { installationError = it.message }
+        }
+        scope.launch {
+            runCatching { kokapi.apiSrv.stats() }
+                .onSuccess { stats = it }
+                .onFailure { statsError = it.message }
+        }
     }
 
     LazyColumn(
@@ -141,23 +140,15 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
             }
         }
 
-        // Replicate Info card
+        // Replicate card (offline sync — load on demand only)
         item {
-            SectionCard(title = "Replicate Info") {
-                replicateError?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error)
-                }
-                replicateInfo?.let { info ->
-                    InfoRow("Revision", info.revision.toString())
-                    info.fulldumpUrl?.let { InfoRow("Full dump URL", it) }
-                } ?: run {
-                    if (replicateError == null) CircularProgressIndicator(modifier = Modifier.padding(8.dp))
-                }
-
+            SectionCard(title = "Database Replication") {
+                Text(
+                    "For apps that maintain a local copy of the geocache database.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(Modifier.height(8.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(8.dp))
-
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
