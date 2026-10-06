@@ -8,8 +8,14 @@ import pl.kokapi.http.json
 import pl.kokapi.model.ApiMethod
 import pl.kokapi.model.ApiMethodSummary
 
+/** Client for OKAPI's self-describing API reference endpoints. */
 class ApiRefClient internal constructor(private val engine: HttpEngine) {
 
+    /**
+     * Returns the full description and field list for a single OKAPI method.
+     *
+     * @param methodPath OKAPI method path, e.g. "services/caches/geocache".
+     */
     suspend fun method(methodPath: String): ApiMethod {
         val body = engine.get("apiref/method", mapOf("method_path" to methodPath))
         val dto = json.decodeFromString<ApiMethodDto>(body)
@@ -21,6 +27,7 @@ class ApiRefClient internal constructor(private val engine: HttpEngine) {
         )
     }
 
+    /** Returns a summary list of all methods exposed by this OKAPI installation. */
     suspend fun methodIndex(): List<ApiMethodSummary> {
         val body = engine.get("apiref/method_index", emptyMap())
         return json.decodeFromString<List<ApiMethodSummaryDto>>(body).map { dto ->
@@ -31,6 +38,13 @@ class ApiRefClient internal constructor(private val engine: HttpEngine) {
         }
     }
 
+    /**
+     * Submits a bug report for a specific OKAPI method.
+     *
+     * @param methodPath The method the issue applies to.
+     * @param issueDescription Human-readable description of the problem.
+     * @return `true` if the server accepted the report.
+     */
     suspend fun reportIssue(methodPath: String, issueDescription: String): Boolean {
         val params = mapOf(
             "method_path" to methodPath,

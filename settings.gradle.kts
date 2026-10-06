@@ -2,6 +2,7 @@ rootProject.name = "kokapi"
 
 include(":kokapi-core")
 include(":kokapi-test")
+include(":example-app:shared")
 include(":example-app:androidApp")
 include(":example-app:desktopApp")
 

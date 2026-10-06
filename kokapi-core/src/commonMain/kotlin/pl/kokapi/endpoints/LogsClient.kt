@@ -12,10 +12,12 @@ import pl.kokapi.model.GeocacheLog
 import pl.kokapi.model.LogCapabilities
 import pl.kokapi.model.enum.LogType
 
+/** Client for reading, submitting, and managing geocache log entries and their photos. */
 class LogsClient internal constructor(private val engine: HttpEngine) {
 
     private val defaultFields = "uuid|cache_code|user|type|date|comment"
 
+    /** Fetches a single log entry by its UUID. */
     suspend fun get(logUuid: String): GeocacheLog {
         val body = engine.get(
             "logs/entry", mapOf(
@@ -26,6 +28,7 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<GeocacheLogDto>(body).toDomain()
     }
 
+    /** Fetches multiple log entries by their UUIDs, returned as a UUID-keyed map. */
     suspend fun getEntries(logUuids: List<String>): Map<String, GeocacheLog> {
         val body = engine.get(
             "logs/entries", mapOf(
@@ -37,6 +40,7 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
             .mapValues { it.value.toDomain() }
     }
 
+    /** Fetches the most recent logs for a cache. */
     suspend fun getForCache(
         cacheCode: String,
         limit: Int = 20,
@@ -53,6 +57,12 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<List<GeocacheLogDto>>(body).map { it.toDomain() }
     }
 
+    /**
+     * Fetches logs submitted by a specific user.
+     *
+     * Requires authentication when fetching logs for the currently authenticated user
+     * to include private entries.
+     */
     suspend fun getUserLogs(
         userUuid: String,
         limit: Int = 20,
@@ -69,6 +79,20 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<List<GeocacheLogDto>>(body).map { it.toDomain() }
     }
 
+    /**
+     * Submits a new log entry for a geocache.
+     *
+     * @param type Log type (Found, DNF, Comment, Attended, etc.).
+     * @param date ISO-8601 date string (e.g. "2024-06-01"); defaults to today on the server.
+     * @param password Cache password, required if the cache is password-protected.
+     * @param commentFormat Format of the comment: "plaintext" or "html".
+     * @param recommend Whether to recommend this cache (costs one recommendation point).
+     * @param rating Optional numeric rating (1–5).
+     * @param needsMaintenance Set to true to flag the cache as needing maintenance.
+     * @return UUID of the newly created log entry.
+     * @throws KokapiException.ApiError if the server rejects the submission.
+     * Requires authentication.
+     */
     suspend fun submit(
         cacheCode: String,
         type: LogType,
@@ -98,10 +122,21 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
             ?: throw KokapiException.ApiError("no_uuid", "Log submitted but no UUID returned")
     }
 
+    /**
+     * Deletes a log entry.
+     *
+     * Requires authentication; the caller must own the log or be an admin.
+     */
     suspend fun delete(logUuid: String) {
         engine.post("logs/delete", mapOf("log_uuid" to logUuid))
     }
 
+    /**
+     * Edits an existing log entry.
+     *
+     * Only fields that are provided (non-null) will be updated.
+     * Requires authentication; the caller must own the log.
+     */
     suspend fun edit(
         logUuid: String,
         comment: String? = null,
@@ -121,6 +156,11 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         engine.post("logs/edit", params)
     }
 
+    /**
+     * Returns the available log types and constraints for a cache or the site.
+     *
+     * @param cacheCode Optional cache code; if omitted, returns site-wide defaults.
+     */
     suspend fun capabilities(cacheCode: String? = null): LogCapabilities {
         val params = buildMap {
             cacheCode?.let { put("cache_code", it) }
@@ -129,6 +169,15 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<LogCapabilitiesDto>(body).toDomain()
     }
 
+    /**
+     * Attaches a photo to an existing log entry.
+     *
+     * @param imageBase64 Base64-encoded image data.
+     * @param isSpoiler Whether the image reveals the cache location.
+     * @return UUID of the newly created image.
+     * @throws KokapiException.ApiError if the server rejects the image.
+     * Requires authentication.
+     */
     suspend fun addImage(
         logUuid: String,
         imageBase64: String,
@@ -148,6 +197,12 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
             ?: throw KokapiException.ApiError("no_image_uuid", "Image added but no UUID returned")
     }
 
+    /**
+     * Updates the caption or spoiler flag of a log photo.
+     *
+     * Only non-null fields are changed.
+     * Requires authentication.
+     */
     suspend fun editImage(
         imageUuid: String,
         caption: String? = null,
@@ -161,6 +216,11 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         engine.post("logs/images/edit", params)
     }
 
+    /**
+     * Deletes a log photo.
+     *
+     * Requires authentication; the caller must own the log.
+     */
     suspend fun deleteImage(imageUuid: String) {
         engine.post("logs/images/delete", mapOf("image_uuid" to imageUuid))
     }

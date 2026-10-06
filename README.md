@@ -16,13 +16,22 @@ val kokapi = KokapiClient(
 val caches = kokapi.caches.search(lat = 50.0619, lon = 19.9368, radiusKm = 5.0)
 caches.forEach { println("${it.code}: ${it.name}") }
 
+// Bounding-box search
+val mapCaches = kokapi.caches.bbox(
+    southLat = 50.0, westLon = 19.8,
+    northLat = 50.1, eastLon = 20.0,
+)
+
 // Get a single cache
 val cache = kokapi.caches.get("OP1234")
 
-// Stream all caches in an area
-kokapi.caches.searchFlow(lat = 50.0619, lon = 19.9368).collect { cache ->
-    println(cache.name)
+// Stream all caches in an area (auto-paginated)
+kokapi.caches.searchFlow(lat = 50.0619, lon = 19.9368).collect { c ->
+    println(c.name)
 }
+
+// Export as GPX
+val gpx = kokapi.formatters.gpx(listOf("OP1234", "OP5678"))
 ```
 
 ## OAuth Login
@@ -40,24 +49,119 @@ val kokapi = KokapiClient(
 val step = kokapi.auth.startLogin()
 openBrowser(step.authorizeUrl)
 
-// Step 2: after user authorizes and is redirected back
+// Step 2: after user authorises and is redirected back
 val ok = kokapi.auth.completeLogin("yourapp://oauth?oauth_token=...&oauth_verifier=...")
 
 // Step 3: use authenticated endpoints
 val me = kokapi.users.me()
 val logUuid = kokapi.logs.submit("OP1234", LogType.FOUND, "Awesome cache!")
+
+// Attach a photo to the log
+val imageUuid = kokapi.logs.addImage(logUuid, base64EncodedImage)
+
+// Mark a cache as watched
+kokapi.caches.mark("OP1234", watched = true)
 ```
 
 ## Supported Endpoints
 
-| Client | Methods |
-|---|---|
-| `kokapi.caches` | `get`, `getMultiple`, `search`, `bbox`, `searchFlow` |
-| `kokapi.logs` | `get`, `submit`, `delete` |
-| `kokapi.users` | `byUsername`, `byUuid`, `me` |
-| `kokapi.attrs` | `attributes`, `attribute` |
-| `kokapi.replicate` | `changelog`, `currentRevision` |
-| `kokapi.auth` | `startLogin`, `completeLogin`, `logout`, `isAuthenticated` |
+### Caches
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.caches` | `get` | | Fetch a single geocache by code |
+| `kokapi.caches` | `getMultiple` | | Fetch multiple geocaches by code list |
+| `kokapi.caches` | `search` | | Nearest-caches search around a lat/lon point |
+| `kokapi.caches` | `bbox` | | Bounding-box search within a geographic rectangle |
+| `kokapi.caches` | `searchAll` | | Full-featured search with 25+ filters (site-wide) |
+| `kokapi.caches` | `searchAndRetrieve` | | Combined search + full data fetch in one request |
+| `kokapi.caches` | `searchSave` | | Save a search on the server and return its set ID |
+| `kokapi.caches` | `searchByUrls` | | Find caches by their opencaching.pl URLs |
+| `kokapi.caches` | `searchFlow` | | Auto-paginating Kotlin Flow for nearest search |
+| `kokapi.caches` | `mark` | ✓ | Mark a cache as watched or ignored |
+| `kokapi.caches` | `savePersonalNotes` | ✓ | Save private notes on a cache |
+| `kokapi.caches` | `edit` | ✓ | Trigger cache-edit flow (owner/admin only) |
+
+### Logs
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.logs` | `get` | | Fetch a single log entry by UUID |
+| `kokapi.logs` | `getEntries` | | Fetch multiple log entries by UUID list |
+| `kokapi.logs` | `getForCache` | | Fetch recent logs for a specific cache |
+| `kokapi.logs` | `getUserLogs` | ○ | Fetch logs submitted by a user |
+| `kokapi.logs` | `submit` | ✓ | Submit a new log entry (Found, DNF, Comment, etc.) |
+| `kokapi.logs` | `delete` | ✓ | Delete a log entry |
+| `kokapi.logs` | `edit` | ✓ | Edit an existing log entry |
+| `kokapi.logs` | `capabilities` | | Check available log types for a cache |
+| `kokapi.logs` | `addImage` | ✓ | Attach a photo to a log entry |
+| `kokapi.logs` | `editImage` | ✓ | Update a log photo's caption or spoiler flag |
+| `kokapi.logs` | `deleteImage` | ✓ | Delete a log photo |
+
+### Users
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.users` | `byUsername` | | Look up a user by display name |
+| `kokapi.users` | `byUuid` | | Look up a user by OKAPI UUID |
+| `kokapi.users` | `byUuids` | | Look up multiple users by UUID list |
+| `kokapi.users` | `byUsernames` | | Look up multiple users by display name list |
+| `kokapi.users` | `byInternalId` | | Look up a user by the site's internal numeric ID |
+| `kokapi.users` | `byInternalIds` | | Look up multiple users by internal ID list |
+| `kokapi.users` | `me` | ✓ | Fetch the authenticated user's own profile |
+
+### Attributes
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.attrs` | `attribute` | | Fetch full details for a single attribute code |
+| `kokapi.attrs` | `attributes` | | Fetch basic info for a list of attribute codes |
+| `kokapi.attrs` | `attributeIndex` | | List all attributes supported by this installation |
+
+### Formatters
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.formatters` | `gpx` | | Export caches as a GPX string |
+| `kokapi.formatters` | `garmin` | | Export caches as a binary Garmin POI file |
+| `kokapi.formatters` | `ggz` | | Export caches as a binary GGZ file |
+| `kokapi.formatters` | `mapTile` | | Fetch a slippy-map PNG tile showing cache locations |
+
+### API Server
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.apiSrv` | `installation` | | Metadata about the current OKAPI installation |
+| `kokapi.apiSrv` | `installations` | | List all known OKAPI installations across all sites |
+| `kokapi.apiSrv` | `stats` | | Usage statistics for this installation |
+
+### API Reference
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.apiRef` | `method` | | Full description and field list for one OKAPI method |
+| `kokapi.apiRef` | `methodIndex` | | Summary list of all methods on this installation |
+| `kokapi.apiRef` | `reportIssue` | | Submit a bug report for an OKAPI method |
+
+### Replicate
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.replicate` | `changelog` | | Incremental change events since a given revision |
+| `kokapi.replicate` | `currentRevision` | | Current database revision number |
+| `kokapi.replicate` | `info` | | Replication system metadata |
+| `kokapi.replicate` | `fullDump` | | URL of the full database dump archive |
+
+### Auth
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.auth` | `startLogin` | | Step 1 of OAuth flow — get the authorisation URL |
+| `kokapi.auth` | `completeLogin` | | Step 2 — exchange the verifier for an access token |
+| `kokapi.auth` | `logout` | | Clear stored access token |
+| `kokapi.auth` | `isAuthenticated` | | Check whether a valid access token is stored |
+
+**Auth legend:** ✓ = required &nbsp;&nbsp; ○ = optional (more data with auth)
 
 ## Error Handling
 

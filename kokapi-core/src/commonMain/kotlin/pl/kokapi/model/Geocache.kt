@@ -3,6 +3,27 @@ package pl.kokapi.model
 import pl.kokapi.model.`enum`.CacheType
 import pl.kokapi.model.`enum`.CacheStatus
 
+/**
+ * A single geocache as returned by the OKAPI server.
+ *
+ * Most fields are populated by default; optional fields are null when not requested
+ * or not set by the cache owner.
+ *
+ * @property code OKAPI cache code (e.g. "OP1234").
+ * @property location Coordinates of the cache.
+ * @property difficulty Difficulty rating from 1.0 to 5.0 in 0.5 steps.
+ * @property terrain Terrain rating from 1.0 to 5.0 in 0.5 steps.
+ * @property owner Reference to the cache owner's profile.
+ * @property hint Decoded hint text, or null if no hint is set.
+ * @property founds Total number of Found-It logs.
+ * @property notFounds Total number of Didn't-Find-It logs.
+ * @property gcCode Corresponding Geocaching.com GC code, if the cache is listed there.
+ * @property size2 Container size label (e.g. "regular", "small", "micro").
+ * @property recommendations Number of user recommendations this cache has received.
+ * @property reqPasswd Whether a password is required to log a find.
+ * @property isFound Whether the authenticated user has found this cache; null when unauthenticated.
+ * @property isWatched Whether the authenticated user is watching this cache; null when unauthenticated.
+ */
 data class Geocache(
     val code: String,
     val name: String,

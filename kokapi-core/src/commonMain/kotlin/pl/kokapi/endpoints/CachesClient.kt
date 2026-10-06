@@ -13,11 +13,13 @@ import pl.kokapi.http.dto.toDomain
 import pl.kokapi.http.json
 import pl.kokapi.model.Geocache
 
+/** Client for geocache search, retrieval, and cache management endpoints. */
 class CachesClient internal constructor(private val engine: HttpEngine) {
 
     private val defaultFields =
         "code|name|location|type|status|difficulty|terrain|owner|description|hint2|url|founds|notfounds|date_created|last_found"
 
+    /** Fetches a single geocache by its OKAPI cache code (e.g. "OP1234"). */
     suspend fun get(code: String): Geocache {
         val body = engine.get(
             "caches/geocache", mapOf(
@@ -28,6 +30,7 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<GeocacheDto>(body).toDomain()
     }
 
+    /** Fetches multiple geocaches by their cache codes in a single request. */
     suspend fun getMultiple(codes: List<String>): List<Geocache> {
         val body = engine.get(
             "caches/geocaches", mapOf(
@@ -38,6 +41,14 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<Map<String, GeocacheDto>>(body).values.map { it.toDomain() }
     }
 
+    /**
+     * Nearest-caches search — finds caches within [radiusKm] of a given point.
+     *
+     * @param lat Latitude of the search center.
+     * @param lon Longitude of the search center.
+     * @param radiusKm Search radius in kilometers.
+     * @param foundStatus Filter by found status, e.g. "found_only" or "notfound_only".
+     */
     suspend fun search(
         lat: Double,
         lon: Double,
@@ -69,6 +80,14 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return getMultiple(codes)
     }
 
+    /**
+     * Bounding-box search — finds caches within a geographic rectangle.
+     *
+     * @param southLat Southern boundary latitude.
+     * @param westLon Western boundary longitude.
+     * @param northLat Northern boundary latitude.
+     * @param eastLon Eastern boundary longitude.
+     */
     suspend fun bbox(
         southLat: Double,
         westLon: Double,
@@ -90,6 +109,16 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return getMultiple(codes)
     }
 
+    /**
+     * Full-featured search with 25+ filter options across the entire site.
+     *
+     * Unlike [search], this is not limited to a radius — it scans the whole site.
+     *
+     * @param excludeMyOwn Exclude caches owned by the authenticated user.
+     * @param withTrackablesOnly Only return caches that currently have trackables.
+     * @param modifiedSince ISO-8601 timestamp; return only caches changed after this date.
+     * @param foundStatus Filter by found status, e.g. "found_only" or "notfound_only".
+     */
     suspend fun searchAll(
         type: List<String>? = null,
         status: List<String> = listOf("Available"),
@@ -134,6 +163,12 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return getMultiple(codes)
     }
 
+    /**
+     * Marks a cache as watched and/or ignored for the authenticated user.
+     *
+     * At least one of [watched] or [ignored] must be provided.
+     * Requires authentication.
+     */
     suspend fun mark(cacheCode: String, watched: Boolean? = null, ignored: Boolean? = null) {
         val params = buildMap {
             put("cache_code", cacheCode)
@@ -143,6 +178,12 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         engine.post("caches/mark", params)
     }
 
+    /**
+     * Saves private personal notes on a cache for the authenticated user.
+     *
+     * @param oldValue Previous notes value for optimistic concurrency; pass empty string to skip the check.
+     * Requires authentication.
+     */
     suspend fun savePersonalNotes(cacheCode: String, notes: String, oldValue: String = "") {
         engine.post(
             "caches/save_personal_notes", mapOf(
@@ -153,6 +194,13 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         )
     }
 
+    /**
+     * Triggers the cache-edit flow on the OKAPI site (owner or admin only).
+     *
+     * @param passwd Password required for password-protected caches.
+     * @throws KokapiException.ApiError if the server returns success=false.
+     * Requires authentication.
+     */
     suspend fun edit(cacheCode: String, passwd: String? = null) {
         val params = buildMap {
             put("cache_code", cacheCode)
@@ -163,6 +211,11 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         if (!result.success) throw KokapiException.ApiError("edit_failed", "caches/edit returned success=false")
     }
 
+    /**
+     * Finds caches by their full opencaching site URLs.
+     *
+     * Useful for resolving cache links shared by users.
+     */
     suspend fun searchByUrls(urls: List<String>): List<Geocache> {
         val params = mapOf("urls" to urls.joinToString("|"))
         val body = engine.get("caches/search/by_urls", params)
@@ -171,6 +224,13 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return getMultiple(codes)
     }
 
+    /**
+     * Executes a search on the server and returns a persistent search set ID.
+     *
+     * The returned ID can be reused to page through large result sets without repeating the query.
+     *
+     * @return The server-assigned search set ID.
+     */
     suspend fun searchSave(
         type: List<String>? = null,
         status: List<String> = listOf("Available"),
@@ -213,6 +273,11 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<SearchSaveResultDto>(body).setId
     }
 
+    /**
+     * Single-call shortcut that searches and retrieves full geocache data in one request.
+     *
+     * Combines `caches/search/all` + `caches/geocaches` into a single OKAPI call, reducing round-trips.
+     */
     suspend fun searchAndRetrieve(
         type: List<String>? = null,
         status: List<String> = listOf("Available"),
@@ -249,6 +314,14 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         return result.results.values.map { it.toDomain() }
     }
 
+    /**
+     * Kotlin Flow that paginates through a nearest-caches search automatically.
+     *
+     * Emits each [Geocache] individually. Pagination stops when a page returns fewer
+     * items than [pageSize].
+     *
+     * @param pageSize Number of caches fetched per page.
+     */
     fun searchFlow(
         lat: Double,
         lon: Double,
