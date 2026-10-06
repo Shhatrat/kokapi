@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pl.kokapi.KokapiClient
+import pl.kokapi.endpoints.Changelog
 import pl.kokapi.model.ApiMethod
 import pl.kokapi.model.ApiMethodSummary
 import pl.kokapi.model.ApiStats
@@ -30,6 +31,10 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
 
     var replicateInfo by remember { mutableStateOf<ReplicateInfo?>(null) }
     var replicateError by remember { mutableStateOf<String?>(null) }
+    var replicateInfoLoading by remember { mutableStateOf(false) }
+    var changelog by remember { mutableStateOf<Changelog?>(null) }
+    var changelogLoading by remember { mutableStateOf(false) }
+    var changelogError by remember { mutableStateOf<String?>(null) }
     var currentRevision by remember { mutableStateOf<Long?>(null) }
     var currentRevisionLoading by remember { mutableStateOf(false) }
     var currentRevisionError by remember { mutableStateOf<String?>(null) }
@@ -175,15 +180,66 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
                         },
                         enabled = !fullDumpLoading
                     ) { Text("Full dump URL") }
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                replicateInfoLoading = true; replicateError = null
+                                runCatching { kokapi.replicate.info() }
+                                    .onSuccess { replicateInfo = it }
+                                    .onFailure { replicateError = it.message ?: "Error" }
+                                replicateInfoLoading = false
+                            }
+                        },
+                        enabled = !replicateInfoLoading
+                    ) { Text("Replicate info") }
                 }
 
-                if (currentRevisionLoading || fullDumpLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                if (currentRevisionLoading || fullDumpLoading || replicateInfoLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
                 currentRevisionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 currentRevision?.let { InfoRow("Current revision", it.toString()) }
                 fullDumpError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 fullDumpUrl?.let {
                     Text("Full dump URL:", style = MaterialTheme.typography.labelSmall)
                     Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+                replicateError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                replicateInfo?.let { info ->
+                    InfoRow("Replicate revision", info.revision.toString())
+                    info.fulldumpUrl?.let { InfoRow("Fulldump URL", it.take(80) + "…") }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
+                Text("Changelog (since revision)", style = MaterialTheme.typography.labelMedium)
+                Spacer(Modifier.height(4.dp))
+                currentRevision?.let { rev ->
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                changelogLoading = true; changelogError = null; changelog = null
+                                runCatching { kokapi.replicate.changelog(rev - 10) }
+                                    .onSuccess { changelog = it }
+                                    .onFailure { changelogError = it.message ?: "Error" }
+                                changelogLoading = false
+                            }
+                        },
+                        enabled = !changelogLoading
+                    ) { Text("Fetch changelog (last ~10 revisions)") }
+                } ?: run {
+                    Text("Load current revision first.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (changelogLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                changelogError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                changelog?.let { cl ->
+                    InfoRow("Revision", cl.revision.toString())
+                    InfoRow("More pages", cl.more.toString())
+                    InfoRow("Entries", cl.changelog.size.toString())
+                    cl.changelog.take(5).forEach { entry ->
+                        Text("• ${entry.action} ${entry.cacheCode ?: ""} ${entry.changeType ?: ""}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (cl.changelog.size > 5) Text("… and ${cl.changelog.size - 5} more", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
