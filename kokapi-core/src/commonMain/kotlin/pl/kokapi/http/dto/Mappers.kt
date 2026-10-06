@@ -5,6 +5,9 @@ import pl.kokapi.model.Installation
 import pl.kokapi.model.ApiStats
 import pl.kokapi.model.ReplicateInfo
 import pl.kokapi.model.LogCapabilities
+import pl.kokapi.model.`enum`.CacheType
+import pl.kokapi.model.`enum`.CacheStatus
+import pl.kokapi.model.`enum`.LogType
 
 internal fun GeocacheDto.toDomain() = Geocache(
     code = code,

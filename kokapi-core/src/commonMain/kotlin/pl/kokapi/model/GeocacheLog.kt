@@ -1,5 +1,7 @@
 package pl.kokapi.model
 
+import pl.kokapi.model.`enum`.LogType
+
 data class GeocacheLog(
     val uuid: String,
     val cacheCode: String,

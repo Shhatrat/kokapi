@@ -3,6 +3,8 @@ package pl.kokapi.model
 import pl.kokapi.http.dto.GeocacheDto
 import pl.kokapi.http.dto.UserRefDto
 import pl.kokapi.http.dto.toDomain
+import pl.kokapi.model.`enum`.CacheType
+import pl.kokapi.model.`enum`.CacheStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

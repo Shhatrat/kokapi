@@ -8,7 +8,7 @@ import pl.kokapi.KokapiClient
 import pl.kokapi.KokapiSite
 import pl.kokapi.auth.InMemoryTokenStorage
 import pl.kokapi.error.KokapiException
-import pl.kokapi.model.LogType
+import pl.kokapi.model.enum.LogType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

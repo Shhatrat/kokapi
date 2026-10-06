@@ -5,7 +5,7 @@ import kotlinx.coroutines.launch
 import pl.kokapi.error.KokapiException
 import pl.kokapi.model.Geocache
 import pl.kokapi.model.GeocacheLog
-import pl.kokapi.model.LogType
+import pl.kokapi.model.enum.LogType
 import pl.kokapi.model.User
 
 fun CachesClient.get(

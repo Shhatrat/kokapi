@@ -10,7 +10,7 @@ import pl.kokapi.http.dto.toDomain
 import pl.kokapi.http.json
 import pl.kokapi.model.GeocacheLog
 import pl.kokapi.model.LogCapabilities
-import pl.kokapi.model.LogType
+import pl.kokapi.model.enum.LogType
 
 class LogsClient internal constructor(private val engine: HttpEngine) {
 

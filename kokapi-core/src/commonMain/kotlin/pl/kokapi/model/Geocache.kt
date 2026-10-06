@@ -1,5 +1,8 @@
 package pl.kokapi.model
 
+import pl.kokapi.model.`enum`.CacheType
+import pl.kokapi.model.`enum`.CacheStatus
+
 data class Geocache(
     val code: String,
     val name: String,

@@ -8,8 +8,8 @@ import pl.kokapi.KokapiClient
 import pl.kokapi.KokapiSite
 import pl.kokapi.auth.InMemoryTokenStorage
 import pl.kokapi.error.KokapiException
-import pl.kokapi.model.CacheStatus
-import pl.kokapi.model.CacheType
+import pl.kokapi.model.enum.CacheStatus
+import pl.kokapi.model.enum.CacheType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
