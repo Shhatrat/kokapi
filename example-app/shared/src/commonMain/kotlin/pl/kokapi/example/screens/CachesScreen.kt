@@ -15,17 +15,58 @@ import kotlinx.coroutines.launch
 import pl.kokapi.KokapiClient
 import pl.kokapi.model.Geocache
 import pl.kokapi.model.GeocacheLog
+import pl.kokapi.model.LogCapabilities
+import pl.kokapi.model.enum.LogType
+
+// Top-level tab: Caches vs Logs
+private enum class CachesTab { CACHES, LOGS }
+
+// Search mode within Caches tab
+private enum class SearchMode { NEAREST, BBOX, SEARCH_ALL, BY_CODE, BY_URL }
 
 @Composable
 fun CachesScreen(kokapi: KokapiClient) {
-    var useBbox by remember { mutableStateOf(false) }
+    var topTab by remember { mutableStateOf(CachesTab.CACHES) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Caches & Logs", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(8.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(
+                onClick = { topTab = CachesTab.CACHES },
+                colors = if (topTab == CachesTab.CACHES)
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                else ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+            ) { Text("Caches") }
+            TextButton(
+                onClick = { topTab = CachesTab.LOGS },
+                colors = if (topTab == CachesTab.LOGS)
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                else ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+            ) { Text("Logs") }
+        }
+
+        HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
+
+        when (topTab) {
+            CachesTab.CACHES -> CachesSubScreen(kokapi)
+            CachesTab.LOGS -> LogsSubScreen(kokapi)
+        }
+    }
+}
+
+@Composable
+private fun CachesSubScreen(kokapi: KokapiClient) {
+    var searchMode by remember { mutableStateOf(SearchMode.NEAREST) }
     var caches by remember { mutableStateOf<List<Geocache>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedCache by remember { mutableStateOf<Geocache?>(null) }
     val scope = rememberCoroutineScope()
 
-    // Nearest search params
+    // Nearest params
     var lat by remember { mutableStateOf("50.0619") }
     var lon by remember { mutableStateOf("19.9368") }
     var radius by remember { mutableStateOf("10.0") }
@@ -36,106 +77,190 @@ fun CachesScreen(kokapi: KokapiClient) {
     var northLat by remember { mutableStateOf("50.1") }
     var eastLon by remember { mutableStateOf("20.0") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Caches", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(8.dp))
+    // SearchAll params
+    var saName by remember { mutableStateOf("") }
+    var saType by remember { mutableStateOf("") }
+    var saDifficulty by remember { mutableStateOf("") }
+    var saLimit by remember { mutableStateOf("20") }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("BBox search")
-            Switch(checked = useBbox, onCheckedChange = {
-                useBbox = it
-                selectedCache = null
-                caches = emptyList()
-                error = null
-            })
-        }
+    // ByCode params
+    var byCodeInput by remember { mutableStateOf("") }
+    var singleCache by remember { mutableStateOf<Geocache?>(null) }
 
-        Spacer(Modifier.height(8.dp))
+    // ByUrl params
+    var byUrlInput by remember { mutableStateOf("") }
 
-        if (!useBbox) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = lat,
-                    onValueChange = { lat = it },
-                    label = { Text("Lat") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = lon,
-                    onValueChange = { lon = it },
-                    label = { Text("Lon") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = radius,
-                    onValueChange = { radius = it },
-                    label = { Text("Radius km") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-            }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = southLat,
-                    onValueChange = { southLat = it },
-                    label = { Text("S lat") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = westLon,
-                    onValueChange = { westLon = it },
-                    label = { Text("W lon") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = northLat,
-                    onValueChange = { northLat = it },
-                    label = { Text("N lat") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = eastLon,
-                    onValueChange = { eastLon = it },
-                    label = { Text("E lon") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-            }
-        }
+    if (selectedCache != null) {
+        CacheDetail(
+            cache = selectedCache!!,
+            kokapi = kokapi,
+            onBack = { selectedCache = null }
+        )
+        return
+    }
 
-        Spacer(Modifier.height(8.dp))
+    if (singleCache != null && searchMode == SearchMode.BY_CODE) {
+        CacheDetail(
+            cache = singleCache!!,
+            kokapi = kokapi,
+            onBack = { singleCache = null }
+        )
+        return
+    }
 
-        Button(onClick = {
-            scope.launch {
-                loading = true
-                error = null
-                selectedCache = null
-                runCatching {
-                    if (!useBbox) {
-                        kokapi.caches.search(
-                            lat = lat.toDouble(),
-                            lon = lon.toDouble(),
-                            radiusKm = radius.toDouble()
-                        )
-                    } else {
-                        kokapi.caches.bbox(
-                            southLat = southLat.toDouble(),
-                            westLon = westLon.toDouble(),
-                            northLat = northLat.toDouble(),
-                            eastLon = eastLon.toDouble()
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Mode selector chips
+        Text("Search mode:", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            SearchMode.entries.forEach { mode ->
+                FilterChip(
+                    selected = searchMode == mode,
+                    onClick = {
+                        searchMode = mode
+                        caches = emptyList()
+                        error = null
+                        singleCache = null
+                    },
+                    label = {
+                        Text(
+                            when (mode) {
+                                SearchMode.NEAREST -> "Nearest"
+                                SearchMode.BBOX -> "BBox"
+                                SearchMode.SEARCH_ALL -> "SearchAll"
+                                SearchMode.BY_CODE -> "ByCode"
+                                SearchMode.BY_URL -> "ByUrl"
+                            },
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
-                }.onSuccess { caches = it }
-                    .onFailure { error = it.message ?: "Unknown error" }
-                loading = false
+                )
             }
-        }) { Text("Search") }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        when (searchMode) {
+            SearchMode.NEAREST -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = lat, onValueChange = { lat = it }, label = { Text("Lat") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = lon, onValueChange = { lon = it }, label = { Text("Lon") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = radius, onValueChange = { radius = it }, label = { Text("Radius km") }, modifier = Modifier.weight(1f), singleLine = true)
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = {
+                    scope.launch {
+                        loading = true; error = null
+                        runCatching { kokapi.caches.search(lat.toDouble(), lon.toDouble(), radius.toDouble()) }
+                            .onSuccess { caches = it }
+                            .onFailure { error = it.message ?: "Unknown error" }
+                        loading = false
+                    }
+                }) { Text("Search") }
+            }
+
+            SearchMode.BBOX -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = southLat, onValueChange = { southLat = it }, label = { Text("S lat") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = westLon, onValueChange = { westLon = it }, label = { Text("W lon") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = northLat, onValueChange = { northLat = it }, label = { Text("N lat") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = eastLon, onValueChange = { eastLon = it }, label = { Text("E lon") }, modifier = Modifier.weight(1f), singleLine = true)
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = {
+                    scope.launch {
+                        loading = true; error = null
+                        runCatching { kokapi.caches.bbox(southLat.toDouble(), westLon.toDouble(), northLat.toDouble(), eastLon.toDouble()) }
+                            .onSuccess { caches = it }
+                            .onFailure { error = it.message ?: "Unknown error" }
+                        loading = false
+                    }
+                }) { Text("Search") }
+            }
+
+            SearchMode.SEARCH_ALL -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = saName, onValueChange = { saName = it }, label = { Text("Name") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = saType, onValueChange = { saType = it }, label = { Text("Type") }, modifier = Modifier.weight(1f), singleLine = true)
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = saDifficulty, onValueChange = { saDifficulty = it }, label = { Text("Difficulty (e.g. 2-3)") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = saLimit, onValueChange = { saLimit = it }, label = { Text("Limit") }, modifier = Modifier.weight(1f), singleLine = true)
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = {
+                    scope.launch {
+                        loading = true; error = null
+                        runCatching {
+                            kokapi.caches.searchAll(
+                                name = saName.takeIf { it.isNotBlank() },
+                                type = saType.takeIf { it.isNotBlank() }?.let { listOf(it) },
+                                difficulty = saDifficulty.takeIf { it.isNotBlank() },
+                                limit = saLimit.toIntOrNull() ?: 20
+                            )
+                        }
+                            .onSuccess { caches = it }
+                            .onFailure { error = it.message ?: "Unknown error" }
+                        loading = false
+                    }
+                }) { Text("Search All") }
+            }
+
+            SearchMode.BY_CODE -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = byCodeInput,
+                        onValueChange = { byCodeInput = it },
+                        label = { Text("Cache code (e.g. OP1234)") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                loading = true; error = null; singleCache = null
+                                runCatching { kokapi.caches.get(byCodeInput.trim()) }
+                                    .onSuccess { singleCache = it }
+                                    .onFailure { error = it.message ?: "Unknown error" }
+                                loading = false
+                            }
+                        },
+                        enabled = byCodeInput.isNotBlank()
+                    ) { Text("Get") }
+                }
+            }
+
+            SearchMode.BY_URL -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = byUrlInput,
+                        onValueChange = { byUrlInput = it },
+                        label = { Text("Opencaching URL") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                loading = true; error = null
+                                runCatching { kokapi.caches.searchByUrls(listOf(byUrlInput.trim())) }
+                                    .onSuccess { caches = it }
+                                    .onFailure { error = it.message ?: "Unknown error" }
+                                loading = false
+                            }
+                        },
+                        enabled = byUrlInput.isNotBlank()
+                    ) { Text("Search") }
+                }
+            }
+        }
 
         error?.let {
             Spacer(Modifier.height(8.dp))
@@ -145,21 +270,14 @@ fun CachesScreen(kokapi: KokapiClient) {
         if (loading) {
             Spacer(Modifier.height(16.dp))
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else if (selectedCache != null) {
-            Spacer(Modifier.height(8.dp))
-            CacheDetail(
-                cache = selectedCache!!,
-                kokapi = kokapi,
-                onBack = { selectedCache = null }
-            )
         } else {
             Spacer(Modifier.height(8.dp))
-            Text("Results: ${caches.size}", style = MaterialTheme.typography.labelMedium)
-            Spacer(Modifier.height(4.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(caches) { cache ->
+            if (caches.isNotEmpty()) {
+                Text("Results: ${caches.size}", style = MaterialTheme.typography.labelMedium)
+                Spacer(Modifier.height(4.dp))
+                caches.forEach { cache ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().clickable { selectedCache = cache }
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable { selectedCache = cache }
                     ) {
                         Column(Modifier.padding(12.dp)) {
                             Text(cache.name, style = MaterialTheme.typography.titleSmall)
@@ -168,11 +286,105 @@ fun CachesScreen(kokapi: KokapiClient) {
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(
-                                "D${cache.difficulty} / T${cache.terrain}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            Text("D${cache.difficulty} / T${cache.terrain}", style = MaterialTheme.typography.bodySmall)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogsSubScreen(kokapi: KokapiClient) {
+    var logUuid by remember { mutableStateOf("") }
+    var singleLog by remember { mutableStateOf<GeocacheLog?>(null) }
+    var singleLogLoading by remember { mutableStateOf(false) }
+    var singleLogError by remember { mutableStateOf<String?>(null) }
+
+    var entriesInput by remember { mutableStateOf("") }
+    var entriesResult by remember { mutableStateOf<Map<String, GeocacheLog>>(emptyMap()) }
+    var entriesLoading by remember { mutableStateOf(false) }
+    var entriesError by remember { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Text("Get log by UUID", style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = logUuid,
+                onValueChange = { logUuid = it },
+                label = { Text("Log UUID") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        singleLogLoading = true; singleLogError = null; singleLog = null
+                        runCatching { kokapi.logs.get(logUuid.trim()) }
+                            .onSuccess { singleLog = it }
+                            .onFailure { singleLogError = it.message ?: "Error" }
+                        singleLogLoading = false
+                    }
+                },
+                enabled = logUuid.isNotBlank()
+            ) { Text("Get log") }
+        }
+
+        if (singleLogLoading) CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+        singleLogError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        singleLog?.let { log ->
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Column(Modifier.padding(10.dp)) {
+                    Text("UUID: ${log.uuid}", style = MaterialTheme.typography.labelSmall)
+                    Text("Cache: ${log.cacheCode} — ${log.type.name} on ${log.date}")
+                    Text("By: ${log.user.username}")
+                    if (log.comment.isNotBlank()) Text(log.comment.take(300), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Text("Get multiple log entries", style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = entriesInput,
+            onValueChange = { entriesInput = it },
+            label = { Text("Comma-separated UUIDs") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2
+        )
+        Spacer(Modifier.height(4.dp))
+        Button(
+            onClick = {
+                scope.launch {
+                    val uuids = entriesInput.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    if (uuids.isEmpty()) return@launch
+                    entriesLoading = true; entriesError = null
+                    runCatching { kokapi.logs.getEntries(uuids) }
+                        .onSuccess { entriesResult = it }
+                        .onFailure { entriesError = it.message ?: "Error" }
+                    entriesLoading = false
+                }
+            },
+            enabled = entriesInput.isNotBlank()
+        ) { Text("Get entries") }
+
+        if (entriesLoading) CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+        entriesError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (entriesResult.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text("${entriesResult.size} entries:", style = MaterialTheme.typography.labelMedium)
+            entriesResult.forEach { (uuid, log) ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                    Column(Modifier.padding(8.dp)) {
+                        Text(uuid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${log.cacheCode} — ${log.type.name} on ${log.date}")
+                        Text("By: ${log.user.username}")
+                        if (log.comment.isNotBlank()) Text(log.comment.take(200), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -189,7 +401,43 @@ private fun CacheDetail(cache: Geocache, kokapi: KokapiClient, onBack: () -> Uni
     var gpxLoading by remember { mutableStateOf(false) }
     var gpxError by remember { mutableStateOf<String?>(null) }
     var markResult by remember { mutableStateOf<String?>(null) }
+
+    // Log capabilities
+    var capabilities by remember { mutableStateOf<LogCapabilities?>(null) }
+    var capsLoading by remember { mutableStateOf(true) }
+    var capsError by remember { mutableStateOf<String?>(null) }
+
+    // Submit log
+    var selectedLogType by remember { mutableStateOf(LogType.FOUND) }
+    var logComment by remember { mutableStateOf("") }
+    var submitLoading by remember { mutableStateOf(false) }
+    var submitResult by remember { mutableStateOf<String?>(null) }
+    var submitError by remember { mutableStateOf<String?>(null) }
+    var submittedUuid by remember { mutableStateOf<String?>(null) }
+
+    // Edit log
+    var editComment by remember { mutableStateOf("") }
+    var editLoading by remember { mutableStateOf(false) }
+    var editResult by remember { mutableStateOf<String?>(null) }
+
+    // Delete log
+    var deleteLoading by remember { mutableStateOf(false) }
+    var deleteResult by remember { mutableStateOf<String?>(null) }
+
+    // Personal notes
+    var personalNotes by remember { mutableStateOf("") }
+    var notesLoading by remember { mutableStateOf(false) }
+    var notesResult by remember { mutableStateOf<String?>(null) }
+
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(cache.code) {
+        capsLoading = true; capsError = null
+        runCatching { kokapi.logs.capabilities(cache.code) }
+            .onSuccess { capabilities = it }
+            .onFailure { capsError = it.message ?: "Error loading capabilities" }
+        capsLoading = false
+    }
 
     Column(
         modifier = Modifier
@@ -198,6 +446,7 @@ private fun CacheDetail(cache: Geocache, kokapi: KokapiClient, onBack: () -> Uni
     ) {
         TextButton(onClick = onBack) { Text("Back to list") }
 
+        // Cache info card
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp)) {
                 Text(cache.name, style = MaterialTheme.typography.titleLarge)
@@ -226,11 +475,164 @@ private fun CacheDetail(cache: Geocache, kokapi: KokapiClient, onBack: () -> Uni
 
         Spacer(Modifier.height(8.dp))
 
+        // Log capabilities section
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp)) {
+                Text("Log Capabilities", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(4.dp))
+                if (capsLoading) {
+                    CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                } else {
+                    capsError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    capabilities?.let { caps ->
+                        Text("Can add: ${caps.canAdd}")
+                        Text("Requires password: ${caps.requiresPassword}")
+                        Text("Available types: ${caps.availableTypes.joinToString(", ")}")
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Submit log section
+        if (kokapi.auth.isAuthenticated && capabilities?.canAdd == true) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Submit Log", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(4.dp))
+
+                    val logTypes = listOf(
+                        "Found It" to LogType.FOUND,
+                        "Didn't find it" to LogType.NOT_FOUND,
+                        "Comment" to LogType.COMMENT
+                    )
+                    Text("Log type:", style = MaterialTheme.typography.labelSmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        logTypes.forEach { (label, type) ->
+                            FilterChip(
+                                selected = selectedLogType == type,
+                                onClick = { selectedLogType = type },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = logComment,
+                        onValueChange = { logComment = it },
+                        label = { Text("Comment") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                submitLoading = true; submitError = null; submitResult = null
+                                runCatching { kokapi.logs.submit(cache.code, selectedLogType, logComment) }
+                                    .onSuccess { uuid ->
+                                        submittedUuid = uuid
+                                        submitResult = "Log submitted! UUID: $uuid"
+                                    }
+                                    .onFailure { submitError = it.message ?: "Submit error" }
+                                submitLoading = false
+                            }
+                        },
+                        enabled = !submitLoading
+                    ) { Text("Submit") }
+
+                    if (submitLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                    submitError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    submitResult?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+
+                    // Post-submit actions
+                    submittedUuid?.let { uuid ->
+                        Spacer(Modifier.height(8.dp))
+                        Text("Actions for submitted log:", style = MaterialTheme.typography.labelSmall)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        deleteLoading = true; deleteResult = null
+                                        runCatching { kokapi.logs.delete(uuid) }
+                                            .onSuccess { deleteResult = "Log deleted" }
+                                            .onFailure { deleteResult = "Delete error: ${it.message}" }
+                                        deleteLoading = false
+                                    }
+                                },
+                                enabled = !deleteLoading
+                            ) { Text("Delete this log") }
+                        }
+                        if (deleteLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                        deleteResult?.let { Text(it) }
+
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editComment,
+                            onValueChange = { editComment = it },
+                            label = { Text("New comment") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    editLoading = true; editResult = null
+                                    runCatching { kokapi.logs.edit(uuid, comment = editComment) }
+                                        .onSuccess { editResult = "Comment updated!" }
+                                        .onFailure { editResult = "Edit error: ${it.message}" }
+                                    editLoading = false
+                                }
+                            },
+                            enabled = !editLoading && editComment.isNotBlank()
+                        ) { Text("Edit comment") }
+                        if (editLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                        editResult?.let { Text(it) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // Personal notes section
+        if (kokapi.auth.isAuthenticated) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Personal Notes", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = personalNotes,
+                        onValueChange = { personalNotes = it },
+                        label = { Text("Notes") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                notesLoading = true; notesResult = null
+                                runCatching { kokapi.caches.savePersonalNotes(cache.code, personalNotes) }
+                                    .onSuccess { notesResult = "Notes saved!" }
+                                    .onFailure { notesResult = "Error: ${it.message}" }
+                                notesLoading = false
+                            }
+                        },
+                        enabled = !notesLoading
+                    ) { Text("Save notes") }
+                    if (notesLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                    notesResult?.let { Text(it) }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // Logs + GPX actions
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
                 scope.launch {
-                    logsLoading = true
-                    logsError = null
+                    logsLoading = true; logsError = null
                     runCatching { kokapi.logs.getForCache(cache.code, 10) }
                         .onSuccess { logs = it }
                         .onFailure { logsError = it.message ?: "Error loading logs" }
@@ -240,8 +642,7 @@ private fun CacheDetail(cache: Geocache, kokapi: KokapiClient, onBack: () -> Uni
 
             Button(onClick = {
                 scope.launch {
-                    gpxLoading = true
-                    gpxError = null
+                    gpxLoading = true; gpxError = null
                     runCatching { kokapi.formatters.gpx(listOf(cache.code)) }
                         .onSuccess { gpx = it.take(500) }
                         .onFailure { gpxError = it.message ?: "GPX error" }
@@ -276,10 +677,7 @@ private fun CacheDetail(cache: Geocache, kokapi: KokapiClient, onBack: () -> Uni
                         Column(Modifier.padding(8.dp)) {
                             Text("${log.user.username} — ${log.type.name} on ${log.date}")
                             if (log.comment.isNotBlank()) {
-                                Text(
-                                    log.comment.take(200),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                Text(log.comment.take(200), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

@@ -3,6 +3,8 @@ package pl.kokapi.example.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +26,23 @@ fun UsersScreen(kokapi: KokapiClient) {
     var logs by remember { mutableStateOf<List<GeocacheLog>>(emptyList()) }
     var logsLoading by remember { mutableStateOf(false) }
     var logsError by remember { mutableStateOf<String?>(null) }
+
+    // Other lookup methods
+    var uuidInput by remember { mutableStateOf("") }
+    var uuidResult by remember { mutableStateOf<User?>(null) }
+    var uuidLoading by remember { mutableStateOf(false) }
+    var uuidError by remember { mutableStateOf<String?>(null) }
+
+    var usernamesInput by remember { mutableStateOf("") }
+    var usernamesResult by remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+    var usernamesLoading by remember { mutableStateOf(false) }
+    var usernamesError by remember { mutableStateOf<String?>(null) }
+
+    var internalIdInput by remember { mutableStateOf("") }
+    var internalIdResult by remember { mutableStateOf<User?>(null) }
+    var internalIdLoading by remember { mutableStateOf(false) }
+    var internalIdError by remember { mutableStateOf<String?>(null) }
+
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(kokapi.auth.isAuthenticated) {
@@ -34,7 +53,7 @@ fun UsersScreen(kokapi: KokapiClient) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("Users", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
 
@@ -96,18 +115,7 @@ fun UsersScreen(kokapi: KokapiClient) {
         }
 
         user?.let { u ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(u.username, style = MaterialTheme.typography.titleMedium)
-                    Text("UUID: ${u.uuid}")
-                    Text("Caches found: ${u.cachesFound}")
-                    Text("Caches hidden: ${u.hiddenCount}")
-                    Text("Rcmds given: ${u.rcmdsGiven}")
-                    u.rcmdsLeft?.let { Text("Rcmds left: $it") }
-                    u.profileUrl.takeIf { it.isNotBlank() }?.let { Text("Profile: $it", style = MaterialTheme.typography.bodySmall) }
-                }
-            }
-
+            UserCard(u)
             Spacer(Modifier.height(8.dp))
 
             Button(onClick = {
@@ -129,26 +137,138 @@ fun UsersScreen(kokapi: KokapiClient) {
             } else if (logs.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
                 Text("Logs (${logs.size}):", style = MaterialTheme.typography.labelLarge)
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth().height(300.dp)
-                ) {
-                    items(logs) { log ->
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(8.dp)) {
-                                Text("${log.cacheCode} — ${log.type.name} on ${log.date}")
-                                if (log.comment.isNotBlank()) {
-                                    Text(
-                                        log.comment.take(150),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                logs.forEach { log ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                        Column(Modifier.padding(8.dp)) {
+                            Text("${log.cacheCode} — ${log.type.name} on ${log.date}")
+                            if (log.comment.isNotBlank()) {
+                                Text(
+                                    log.comment.take(150),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
                 }
             }
+        }
+
+        Spacer(Modifier.height(24.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
+
+        Text("Other lookup methods", style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(8.dp))
+
+        // By UUID
+        Text("By UUID:", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = uuidInput,
+                onValueChange = { uuidInput = it },
+                label = { Text("User UUID") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        uuidLoading = true; uuidError = null; uuidResult = null
+                        runCatching { kokapi.users.byUuid(uuidInput.trim()) }
+                            .onSuccess { uuidResult = it }
+                            .onFailure { uuidError = it.message ?: "Error" }
+                        uuidLoading = false
+                    }
+                },
+                enabled = uuidInput.isNotBlank()
+            ) { Text("By UUID") }
+        }
+        if (uuidLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+        uuidError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        uuidResult?.let { UserCard(it) }
+
+        Spacer(Modifier.height(12.dp))
+
+        // By usernames (bulk)
+        Text("By usernames (comma-separated):", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = usernamesInput,
+                onValueChange = { usernamesInput = it },
+                label = { Text("Usernames") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        val names = usernamesInput.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                        if (names.isEmpty()) return@launch
+                        usernamesLoading = true; usernamesError = null; usernamesResult = emptyMap()
+                        runCatching { kokapi.users.byUsernames(names) }
+                            .onSuccess { usernamesResult = it }
+                            .onFailure { usernamesError = it.message ?: "Error" }
+                        usernamesLoading = false
+                    }
+                },
+                enabled = usernamesInput.isNotBlank()
+            ) { Text("By usernames") }
+        }
+        if (usernamesLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+        usernamesError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (usernamesResult.isNotEmpty()) {
+            Text("${usernamesResult.size} results:", style = MaterialTheme.typography.labelSmall)
+            usernamesResult.values.forEach { u -> UserCard(u) }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // By internal ID
+        Text("By internal ID:", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = internalIdInput,
+                onValueChange = { internalIdInput = it },
+                label = { Text("Internal ID (number)") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        internalIdLoading = true; internalIdError = null; internalIdResult = null
+                        runCatching { kokapi.users.byInternalId(internalIdInput.trim()) }
+                            .onSuccess { internalIdResult = it }
+                            .onFailure { internalIdError = it.message ?: "Error" }
+                        internalIdLoading = false
+                    }
+                },
+                enabled = internalIdInput.isNotBlank()
+            ) { Text("By internal ID") }
+        }
+        if (internalIdLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+        internalIdError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        internalIdResult?.let { UserCard(it) }
+
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun UserCard(u: User) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Column(Modifier.padding(12.dp)) {
+            Text(u.username, style = MaterialTheme.typography.titleSmall)
+            Text("UUID: ${u.uuid}", style = MaterialTheme.typography.bodySmall)
+            Text("Caches found: ${u.cachesFound}", style = MaterialTheme.typography.bodySmall)
+            Text("Caches hidden: ${u.hiddenCount}", style = MaterialTheme.typography.bodySmall)
+            Text("Rcmds given: ${u.rcmdsGiven}", style = MaterialTheme.typography.bodySmall)
+            u.rcmdsLeft?.let { Text("Rcmds left: $it", style = MaterialTheme.typography.bodySmall) }
+            u.profileUrl.takeIf { it.isNotBlank() }?.let { Text("Profile: $it", style = MaterialTheme.typography.bodySmall) }
         }
     }
 }
