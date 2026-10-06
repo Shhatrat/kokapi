@@ -41,13 +41,23 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         limit: Int = 100,
         offset: Int = 0,
         type: String? = null,
+        status: String = "Available",
+        difficulty: String? = null,
+        terrain: String? = null,
+        foundStatus: String? = null,
+        orderBy: String? = null,
     ): List<Geocache> {
         val params = buildMap {
             put("center", "$lat|$lon")
             put("radius", radiusKm.toString())
             put("limit", limit.toString())
             put("offset", offset.toString())
+            put("status", status)
             type?.let { put("type", it) }
+            difficulty?.let { put("difficulty", it) }
+            terrain?.let { put("terrain", it) }
+            foundStatus?.let { put("found_status", it) }
+            orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/nearest", params)
         val codes = json.decodeFromString<SearchResultDto>(body).results
@@ -61,16 +71,82 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         northLat: Double,
         eastLon: Double,
         limit: Int = 100,
+        offset: Int = 0,
+        orderBy: String? = null,
     ): List<Geocache> {
-        val body = engine.get(
-            "caches/search/bbox", mapOf(
-                "bbox" to "$southLat|$westLon|$northLat|$eastLon",
-                "limit" to limit.toString(),
-            )
-        )
+        val params = buildMap {
+            put("bbox", "$southLat|$westLon|$northLat|$eastLon")
+            put("limit", limit.toString())
+            put("offset", offset.toString())
+            orderBy?.let { put("order_by", it) }
+        }
+        val body = engine.get("caches/search/bbox", params)
         val codes = json.decodeFromString<SearchResultDto>(body).results
         if (codes.isEmpty()) return emptyList()
         return getMultiple(codes)
+    }
+
+    suspend fun searchAll(
+        type: List<String>? = null,
+        status: List<String> = listOf("Available"),
+        ownerUuid: List<String>? = null,
+        name: String? = null,
+        terrain: String? = null,
+        difficulty: String? = null,
+        size2: List<String>? = null,
+        minRcmds: String? = null,
+        minFounds: Int? = null,
+        maxFounds: Int? = null,
+        modifiedSince: String? = null,
+        foundStatus: String? = null,
+        excludeMyOwn: Boolean = false,
+        withTrackablesOnly: Boolean = false,
+        orderBy: String? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+    ): List<Geocache> {
+        val params = buildMap {
+            put("status", status.joinToString("|"))
+            put("limit", limit.toString())
+            put("offset", offset.toString())
+            if (excludeMyOwn) put("exclude_my_own", "true")
+            if (withTrackablesOnly) put("with_trackables_only", "true")
+            type?.let { put("type", it.joinToString("|")) }
+            ownerUuid?.let { put("owner_uuid", it.joinToString("|")) }
+            name?.let { put("name", it) }
+            terrain?.let { put("terrain", it) }
+            difficulty?.let { put("difficulty", it) }
+            size2?.let { put("size2", it.joinToString("|")) }
+            minRcmds?.let { put("min_rcmds", it) }
+            minFounds?.let { put("min_founds", it.toString()) }
+            maxFounds?.let { put("max_founds", it.toString()) }
+            modifiedSince?.let { put("modified_since", it) }
+            foundStatus?.let { put("found_status", it) }
+            orderBy?.let { put("order_by", it) }
+        }
+        val body = engine.get("caches/search/all", params)
+        val codes = json.decodeFromString<SearchResultDto>(body).results
+        if (codes.isEmpty()) return emptyList()
+        return getMultiple(codes)
+    }
+
+    suspend fun mark(cacheCode: String, watched: Boolean? = null, ignored: Boolean? = null) {
+        val params = buildMap {
+            put("cache_code", cacheCode)
+            watched?.let { put("watched", it.toString()) }
+            ignored?.let { put("ignored", it.toString()) }
+        }
+        engine.post("caches/mark", params)
+    }
+
+    suspend fun savePersonalNotes(cacheCode: String, notes: String, oldValue: String = "") {
+        engine.post(
+            "caches/save_personal_notes", mapOf(
+                "cache_code" to cacheCode,
+                "new_value" to notes,
+                "old_value" to oldValue,
+            )
+        )
     }
 
     fun searchFlow(

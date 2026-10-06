@@ -28,4 +28,13 @@ class AttrsClient internal constructor(private val engine: HttpEngine) {
         )
         return json.decodeFromString<AttributeFullDto>(body).toDomain()
     }
+
+    suspend fun attributeIndex(onlyLocallyUsed: Boolean = false): List<Attribute> {
+        val params = buildMap {
+            put("fields", "acode|name|local_icon_url")
+            if (onlyLocallyUsed) put("only_locally_used", "true")
+        }
+        val body = engine.get("attrs/attribute_index", params)
+        return json.decodeFromString<Map<String, AttributeDto>>(body).values.map { it.toDomain() }
+    }
 }

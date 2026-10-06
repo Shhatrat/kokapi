@@ -88,4 +88,32 @@ class CachesClientTest {
         val results = client.caches.search(lat = 51.0, lon = 20.0, radiusKm = 5.0)
         assertEquals(2, results.size)
     }
+
+    @Test
+    fun searchAllReturnsList() = runTest {
+        val searchCodesJson = """{"results":["OP1"],"more":false}"""
+        val geocachesJson = """{"OP1":{"code":"OP1","name":"C1","location":"51.0|20.0","type":"Traditional","status":"Available","difficulty":1.0,"terrain":1.0,"owner":{"uuid":"u","username":"u"}}}"""
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine { request ->
+                val body = if (request.url.encodedPath.contains("search")) searchCodesJson else geocachesJson
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
+        )
+        val results = client.caches.searchAll()
+        assertEquals(1, results.size)
+        assertEquals("OP1", results[0].code)
+    }
+
+    @Test
+    fun markDoesNotThrow() = runTest {
+        clientWith("{}").caches.mark("OP1", watched = true)
+    }
+
+    @Test
+    fun savePersonalNotesDoesNotThrow() = runTest {
+        clientWith("{}").caches.savePersonalNotes("OP1", "My note")
+    }
 }

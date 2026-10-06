@@ -8,4 +8,7 @@ data class User(
     val profileUrl: String,
     val cachesFound: Int,
     val hiddenCount: Int,
+    val rcmdsGiven: Int = 0,
+    val rcmdsLeft: Int? = null,
+    val homeLocation: LatLon? = null,
 )

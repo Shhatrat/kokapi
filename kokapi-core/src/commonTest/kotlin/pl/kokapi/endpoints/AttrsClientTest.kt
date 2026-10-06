@@ -37,4 +37,22 @@ class AttrsClientTest {
         val attrs = clientWith(json).attrs.attributes(listOf("A1", "A2-0"))
         assertEquals(2, attrs.size)
     }
+
+    @Test
+    fun attributeIndexReturnsMap() = runTest {
+        val json = """{"A1":{"acode":"A1","name":"Dogs"},"A2":{"acode":"A2","name":"Bikes"}}"""
+        val attrs = clientWith(json).attrs.attributeIndex()
+        assertEquals(2, attrs.size)
+        val acodes = attrs.map { it.acode }.toSet()
+        assertTrue(acodes.contains("A1"))
+        assertTrue(acodes.contains("A2"))
+    }
+
+    @Test
+    fun attributeIndexOnlyLocallyUsed() = runTest {
+        val json = """{"A1":{"acode":"A1","name":"Dogs"}}"""
+        val attrs = clientWith(json).attrs.attributeIndex(onlyLocallyUsed = true)
+        assertEquals(1, attrs.size)
+        assertEquals("A1", attrs[0].acode)
+    }
 }

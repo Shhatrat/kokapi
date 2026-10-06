@@ -7,4 +7,9 @@ data class GeocacheLog(
     val type: LogType,
     val date: String,
     val comment: String,
+    val images: List<LogImage> = emptyList(),
+    val wasRecommended: Boolean = false,
+    val needsMaintenance: Boolean? = null,
+    val dateCreated: String? = null,
+    val lastModified: String? = null,
 )
