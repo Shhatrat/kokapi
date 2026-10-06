@@ -1,0 +1,13 @@
+package pl.kokapi.http.dto
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+internal data class UserDto(
+    val uuid: String,
+    val username: String,
+    @SerialName("profile_url") val profileUrl: String = "",
+    @SerialName("caches_found") val cachesFound: Int = 0,
+    @SerialName("hidden_count") val hiddenCount: Int = 0,
+)
