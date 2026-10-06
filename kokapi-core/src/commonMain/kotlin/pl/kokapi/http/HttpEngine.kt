@@ -50,13 +50,15 @@ internal class HttpEngine(
         }
     }
 
-    suspend fun post(path: String, params: Map<String, String> = emptyMap()): String {
+    suspend fun post(path: String, params: Map<String, String> = emptyMap(), forceConsumerAuth: Boolean = false): String {
         val url = "${site.baseUrl}/$path"
         val bodyString = params.entries.joinToString("&") { "${it.key}=${it.value}" }
         return try {
             val response = httpClient.post(url) {
                 if (oauthManager.isAuthenticated) {
                     header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params))
+                } else if (forceConsumerAuth) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params, tokenCredentials = null))
                 }
                 contentType(ContentType.Application.FormUrlEncoded)
                 setBody(bodyString)

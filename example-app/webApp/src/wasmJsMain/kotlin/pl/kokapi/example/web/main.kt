@@ -11,8 +11,8 @@ fun main() {
     val kokapi = KokapiClient(
         site = KokapiSite.OPENCACHING_PL,
         consumerKey = "OKAPI_KEY_REMOVED",
-        consumerSecret = "",
-        callbackUrl = "http://localhost:8080/oauth",
+        consumerSecret = "OKAPI_SECRET_REMOVED",
+        callbackUrl = "oob",
     )
     CanvasBasedWindow(canvasElementId = "ComposeTarget") {
         App(kokapi)

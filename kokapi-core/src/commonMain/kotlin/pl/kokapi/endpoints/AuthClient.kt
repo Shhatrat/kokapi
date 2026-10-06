@@ -41,7 +41,7 @@ class AuthClient internal constructor(
      * @return [OAuthLoginStep] containing the URL to open in a browser.
      */
     suspend fun startLogin(): OAuthLoginStep {
-        val response = engine.post("oauth/request_token", mapOf("oauth_callback" to "oob"))
+        val response = engine.post("oauth/request_token", mapOf("oauth_callback" to "oob"), forceConsumerAuth = true)
         val params = response.split("&").mapNotNull {
             val idx = it.indexOf('=')
             if (idx < 0) null else it.substring(0, idx) to it.substring(idx + 1)
@@ -65,7 +65,7 @@ class AuthClient internal constructor(
      */
     suspend fun completeLogin(callbackUrl: String): Boolean {
         val verifier = oauthManager.parseCallbackUrl(callbackUrl) ?: return false
-        val response = engine.post("oauth/access_token", mapOf("oauth_verifier" to verifier))
+        val response = engine.post("oauth/access_token", mapOf("oauth_verifier" to verifier), forceConsumerAuth = true)
         val params = response.split("&").mapNotNull {
             val idx = it.indexOf('=')
             if (idx < 0) null else it.substring(0, idx) to it.substring(idx + 1)
