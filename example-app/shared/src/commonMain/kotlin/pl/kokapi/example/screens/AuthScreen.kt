@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -69,6 +70,7 @@ fun AuthScreen(kokapi: KokapiClient) {
 
             authorizeUrl?.let { url ->
                 val clipboard = LocalClipboardManager.current
+                val uriHandler = LocalUriHandler.current
                 var copied by remember { mutableStateOf(false) }
                 Spacer(Modifier.height(16.dp))
                 Text("Open this URL in your browser:", style = MaterialTheme.typography.labelLarge)
@@ -86,11 +88,16 @@ fun AuthScreen(kokapi: KokapiClient) {
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Button(onClick = {
-                    clipboard.setText(AnnotatedString(url))
-                    copied = true
-                }) {
-                    Text(if (copied) "Copied!" else "Copy URL")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { uriHandler.openUri(url) }) {
+                        Text("Open in browser")
+                    }
+                    OutlinedButton(onClick = {
+                        clipboard.setText(AnnotatedString(url))
+                        copied = true
+                    }) {
+                        Text(if (copied) "Copied!" else "Copy URL")
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
