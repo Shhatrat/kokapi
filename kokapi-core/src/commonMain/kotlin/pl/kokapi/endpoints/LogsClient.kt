@@ -103,6 +103,7 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         recommend: Boolean = false,
         rating: Int? = null,
         needsMaintenance: Boolean? = null,
+        onDuplicate: String = "silent_success",
     ): String {
         val params = buildMap {
             put("cache_code", cacheCode)
@@ -110,6 +111,7 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
             put("comment", comment)
             put("comment_format", commentFormat)
             put("recommend", recommend.toString())
+            put("on_duplicate", onDuplicate)
             date?.let { put("when", it) }
             password?.let { put("password", it) }
             rating?.let { put("rating", it.toString()) }

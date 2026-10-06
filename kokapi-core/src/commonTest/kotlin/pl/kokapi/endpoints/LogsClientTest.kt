@@ -136,6 +136,18 @@ class LogsClientTest {
     }
 
     @Test
+    fun submitLogWithOnDuplicateContinue() = runTest {
+        val json = """{"success":true,"message":"Saved","log_uuid":"abc-123"}"""
+        val uuid = clientWith(json).logs.submit(
+            cacheCode = "OP1",
+            type = LogType.FOUND,
+            comment = "Great!",
+            onDuplicate = "continue",
+        )
+        assertEquals("abc-123", uuid)
+    }
+
+    @Test
     fun getLogPopulatesExtendedFields() = runTest {
         val json = """
             {"uuid":"l1","cache_code":"OP1","user":{"uuid":"u","username":"u"},
