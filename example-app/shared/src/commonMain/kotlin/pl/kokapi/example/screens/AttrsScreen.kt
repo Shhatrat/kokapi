@@ -171,6 +171,10 @@ private fun AttrRow(attr: Attribute) {
                     Spacer(Modifier.height(2.dp))
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                attr.iconUrl?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text("Icon: $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

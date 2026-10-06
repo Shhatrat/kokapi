@@ -43,6 +43,16 @@ fun UsersScreen(kokapi: KokapiClient) {
     var internalIdLoading by remember { mutableStateOf(false) }
     var internalIdError by remember { mutableStateOf<String?>(null) }
 
+    var uuidsInput by remember { mutableStateOf("") }
+    var uuidsResult by remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+    var uuidsLoading by remember { mutableStateOf(false) }
+    var uuidsError by remember { mutableStateOf<String?>(null) }
+
+    var internalIdsInput by remember { mutableStateOf("") }
+    var internalIdsResult by remember { mutableStateOf<Map<String, User>>(emptyMap()) }
+    var internalIdsLoading by remember { mutableStateOf(false) }
+    var internalIdsError by remember { mutableStateOf<String?>(null) }
+
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(kokapi.auth.isAuthenticated) {
@@ -69,6 +79,7 @@ fun UsersScreen(kokapi: KokapiClient) {
                         Text("Caches hidden: ${me.hiddenCount}")
                         Text("Rcmds given: ${me.rcmdsGiven}")
                         me.rcmdsLeft?.let { Text("Rcmds left: $it") }
+                        if (me.rcmdFoundsNeeded > 0) Text("Finds needed for next rcmd: ${me.rcmdFoundsNeeded}")
                     }
                 }
             }
@@ -254,6 +265,76 @@ fun UsersScreen(kokapi: KokapiClient) {
         internalIdError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         internalIdResult?.let { UserCard(it) }
 
+        Spacer(Modifier.height(12.dp))
+
+        // By UUIDs (bulk)
+        Text("By UUIDs (bulk, comma-separated):", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = uuidsInput,
+                onValueChange = { uuidsInput = it },
+                label = { Text("UUIDs") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        val ids = uuidsInput.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                        if (ids.isEmpty()) return@launch
+                        uuidsLoading = true; uuidsError = null; uuidsResult = emptyMap()
+                        runCatching { kokapi.users.byUuids(ids) }
+                            .onSuccess { uuidsResult = it }
+                            .onFailure { uuidsError = it.message ?: "Error" }
+                        uuidsLoading = false
+                    }
+                },
+                enabled = uuidsInput.isNotBlank()
+            ) { Text("By UUIDs") }
+        }
+        if (uuidsLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+        uuidsError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (uuidsResult.isNotEmpty()) {
+            Text("${uuidsResult.size} results:", style = MaterialTheme.typography.labelSmall)
+            uuidsResult.values.forEach { u -> UserCard(u) }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // By internal IDs (bulk)
+        Text("By internal IDs (bulk, comma-separated):", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = internalIdsInput,
+                onValueChange = { internalIdsInput = it },
+                label = { Text("Internal IDs") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        val ids = internalIdsInput.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                        if (ids.isEmpty()) return@launch
+                        internalIdsLoading = true; internalIdsError = null; internalIdsResult = emptyMap()
+                        runCatching { kokapi.users.byInternalIds(ids) }
+                            .onSuccess { internalIdsResult = it }
+                            .onFailure { internalIdsError = it.message ?: "Error" }
+                        internalIdsLoading = false
+                    }
+                },
+                enabled = internalIdsInput.isNotBlank()
+            ) { Text("By internal IDs") }
+        }
+        if (internalIdsLoading) CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+        internalIdsError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (internalIdsResult.isNotEmpty()) {
+            Text("${internalIdsResult.size} results:", style = MaterialTheme.typography.labelSmall)
+            internalIdsResult.values.forEach { u -> UserCard(u) }
+        }
+
         Spacer(Modifier.height(16.dp))
     }
 }
@@ -268,6 +349,7 @@ private fun UserCard(u: User) {
             Text("Caches hidden: ${u.hiddenCount}", style = MaterialTheme.typography.bodySmall)
             Text("Rcmds given: ${u.rcmdsGiven}", style = MaterialTheme.typography.bodySmall)
             u.rcmdsLeft?.let { Text("Rcmds left: $it", style = MaterialTheme.typography.bodySmall) }
+            if (u.rcmdFoundsNeeded > 0) Text("Finds needed for next rcmd: ${u.rcmdFoundsNeeded}", style = MaterialTheme.typography.bodySmall)
             u.profileUrl.takeIf { it.isNotBlank() }?.let { Text("Profile: $it", style = MaterialTheme.typography.bodySmall) }
         }
     }
