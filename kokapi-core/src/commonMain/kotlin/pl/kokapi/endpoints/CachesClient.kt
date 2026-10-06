@@ -64,7 +64,25 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         status: String = "Available",
         difficulty: String? = null,
         terrain: String? = null,
+        size2: List<String>? = null,
+        ownerUuid: String? = null,
+        name: String? = null,
+        minRcmds: String? = null,
+        minFounds: Int? = null,
+        maxFounds: Int? = null,
+        modifiedSince: String? = null,
         foundStatus: String? = null,
+        foundBy: String? = null,
+        notFoundBy: String? = null,
+        recommendedOnly: Boolean = false,
+        recommendedBy: String? = null,
+        watchedOnly: Boolean = false,
+        ignoredStatus: String? = null,
+        excludeMyOwn: Boolean = false,
+        withTrackablesOnly: Boolean = false,
+        ftfHunter: Boolean = false,
+        setAnd: String? = null,
+        rating: String? = null,
         orderBy: String? = null,
     ): List<Geocache> {
         val params = buildMap {
@@ -76,7 +94,25 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             type?.let { put("type", it) }
             difficulty?.let { put("difficulty", it) }
             terrain?.let { put("terrain", it) }
+            size2?.let { put("size2", it.joinToString("|")) }
+            ownerUuid?.let { put("owner_uuid", it) }
+            name?.let { put("name", it) }
+            minRcmds?.let { put("min_rcmds", it) }
+            minFounds?.let { put("min_founds", it.toString()) }
+            maxFounds?.let { put("max_founds", it.toString()) }
+            modifiedSince?.let { put("modified_since", it) }
             foundStatus?.let { put("found_status", it) }
+            foundBy?.let { put("found_by", it) }
+            notFoundBy?.let { put("not_found_by", it) }
+            if (recommendedOnly) put("recommended_only", "true")
+            recommendedBy?.let { put("recommended_by", it) }
+            if (watchedOnly) put("watched_only", "true")
+            ignoredStatus?.let { put("ignored_status", it) }
+            if (excludeMyOwn) put("exclude_my_own", "true")
+            if (withTrackablesOnly) put("with_trackables_only", "true")
+            if (ftfHunter) put("ftf_hunter", "true")
+            setAnd?.let { put("set_and", it) }
+            rating?.let { put("rating", it) }
             orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/nearest", params)
@@ -100,12 +136,58 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         eastLon: Double,
         limit: Int = 100,
         offset: Int = 0,
+        type: String? = null,
+        status: String = "Available",
+        difficulty: String? = null,
+        terrain: String? = null,
+        size2: List<String>? = null,
+        ownerUuid: String? = null,
+        name: String? = null,
+        minRcmds: String? = null,
+        minFounds: Int? = null,
+        maxFounds: Int? = null,
+        modifiedSince: String? = null,
+        foundStatus: String? = null,
+        foundBy: String? = null,
+        notFoundBy: String? = null,
+        recommendedOnly: Boolean = false,
+        recommendedBy: String? = null,
+        watchedOnly: Boolean = false,
+        ignoredStatus: String? = null,
+        excludeMyOwn: Boolean = false,
+        withTrackablesOnly: Boolean = false,
+        ftfHunter: Boolean = false,
+        setAnd: String? = null,
+        rating: String? = null,
         orderBy: String? = null,
     ): List<Geocache> {
         val params = buildMap {
             put("bbox", "$southLat|$westLon|$northLat|$eastLon")
             put("limit", limit.toString())
             put("offset", offset.toString())
+            put("status", status)
+            type?.let { put("type", it) }
+            difficulty?.let { put("difficulty", it) }
+            terrain?.let { put("terrain", it) }
+            size2?.let { put("size2", it.joinToString("|")) }
+            ownerUuid?.let { put("owner_uuid", it) }
+            name?.let { put("name", it) }
+            minRcmds?.let { put("min_rcmds", it) }
+            minFounds?.let { put("min_founds", it.toString()) }
+            maxFounds?.let { put("max_founds", it.toString()) }
+            modifiedSince?.let { put("modified_since", it) }
+            foundStatus?.let { put("found_status", it) }
+            foundBy?.let { put("found_by", it) }
+            notFoundBy?.let { put("not_found_by", it) }
+            if (recommendedOnly) put("recommended_only", "true")
+            recommendedBy?.let { put("recommended_by", it) }
+            if (watchedOnly) put("watched_only", "true")
+            ignoredStatus?.let { put("ignored_status", it) }
+            if (excludeMyOwn) put("exclude_my_own", "true")
+            if (withTrackablesOnly) put("with_trackables_only", "true")
+            if (ftfHunter) put("ftf_hunter", "true")
+            setAnd?.let { put("set_and", it) }
+            rating?.let { put("rating", it) }
             orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/bbox", params)
@@ -137,8 +219,17 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         maxFounds: Int? = null,
         modifiedSince: String? = null,
         foundStatus: String? = null,
+        foundBy: String? = null,
+        notFoundBy: String? = null,
+        recommendedOnly: Boolean = false,
+        recommendedBy: String? = null,
+        watchedOnly: Boolean = false,
+        ignoredStatus: String? = null,
         excludeMyOwn: Boolean = false,
         withTrackablesOnly: Boolean = false,
+        ftfHunter: Boolean = false,
+        setAnd: String? = null,
+        rating: String? = null,
         orderBy: String? = null,
         limit: Int = 100,
         offset: Int = 0,
@@ -160,6 +251,15 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             maxFounds?.let { put("max_founds", it.toString()) }
             modifiedSince?.let { put("modified_since", it) }
             foundStatus?.let { put("found_status", it) }
+            foundBy?.let { put("found_by", it) }
+            notFoundBy?.let { put("not_found_by", it) }
+            if (recommendedOnly) put("recommended_only", "true")
+            recommendedBy?.let { put("recommended_by", it) }
+            if (watchedOnly) put("watched_only", "true")
+            ignoredStatus?.let { put("ignored_status", it) }
+            if (ftfHunter) put("ftf_hunter", "true")
+            setAnd?.let { put("set_and", it) }
+            rating?.let { put("rating", it) }
             orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/all", params)
@@ -249,8 +349,17 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         maxFounds: Int? = null,
         modifiedSince: String? = null,
         foundStatus: String? = null,
+        foundBy: String? = null,
+        notFoundBy: String? = null,
+        recommendedOnly: Boolean = false,
+        recommendedBy: String? = null,
+        watchedOnly: Boolean = false,
+        ignoredStatus: String? = null,
         excludeMyOwn: Boolean = false,
         withTrackablesOnly: Boolean = false,
+        ftfHunter: Boolean = false,
+        setAnd: String? = null,
+        rating: String? = null,
         orderBy: String? = null,
         limit: Int = 100,
         offset: Int = 0,
@@ -272,6 +381,15 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             maxFounds?.let { put("max_founds", it.toString()) }
             modifiedSince?.let { put("modified_since", it) }
             foundStatus?.let { put("found_status", it) }
+            foundBy?.let { put("found_by", it) }
+            notFoundBy?.let { put("not_found_by", it) }
+            if (recommendedOnly) put("recommended_only", "true")
+            recommendedBy?.let { put("recommended_by", it) }
+            if (watchedOnly) put("watched_only", "true")
+            ignoredStatus?.let { put("ignored_status", it) }
+            if (ftfHunter) put("ftf_hunter", "true")
+            setAnd?.let { put("set_and", it) }
+            rating?.let { put("rating", it) }
             orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/save", params)

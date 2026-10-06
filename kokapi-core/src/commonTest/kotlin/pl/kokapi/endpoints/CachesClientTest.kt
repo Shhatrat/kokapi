@@ -188,6 +188,59 @@ class CachesClientTest {
     }
 
     @Test
+    fun searchWithNewFiltersReturnsEmptyList() = runTest {
+        val results = clientWith("""{"results":[],"more":false}""").caches.search(
+            lat = 51.0, lon = 20.0,
+            ownerUuid = "uuid-owner",
+            foundBy = "uuid-found",
+            recommendedOnly = true,
+            excludeMyOwn = true,
+            watchedOnly = true,
+            ftfHunter = true,
+            rating = "3-5",
+        )
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun bboxWithNewFiltersReturnsEmptyList() = runTest {
+        val results = clientWith("""{"results":[],"more":false}""").caches.bbox(
+            southLat = 50.0, westLon = 19.0,
+            northLat = 51.0, eastLon = 21.0,
+            foundBy = "uuid-found",
+            recommendedOnly = true,
+            notFoundBy = "uuid-notfound",
+        )
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun searchAllWithNewFiltersReturnsEmptyList() = runTest {
+        val results = clientWith("""{"results":[],"more":false}""").caches.searchAll(
+            foundBy = "uuid-found",
+            notFoundBy = "uuid-notfound",
+            recommendedOnly = true,
+            recommendedBy = "uuid-rcmd",
+            watchedOnly = true,
+            ignoredStatus = "unignored_only",
+            ftfHunter = true,
+            setAnd = "set123",
+            rating = "3-5",
+        )
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun searchSaveWithNewFiltersReturnsSetId() = runTest {
+        val setId = clientWith("""{"set_id":"xyz"}""").caches.searchSave(
+            foundBy = "uuid-found",
+            recommendedOnly = true,
+            ftfHunter = true,
+        )
+        assertEquals("xyz", setId)
+    }
+
+    @Test
     fun getCachePopulatesExtendedFields() = runTest {
         val json = """
             {
