@@ -17,12 +17,19 @@ internal class HttpEngine(
     private val httpClient: HttpClient,
 ) {
     suspend fun get(path: String, params: Map<String, String> = emptyMap()): String {
-        val allParams = params + ("consumer_key" to oauthManager.consumerKey)
-        val url = buildUrl(path, allParams)
+        val baseParams = params + ("consumer_key" to oauthManager.consumerKey)
+        val urlForSigning = buildUrl(path, baseParams)
+
+        val oauthQueryParams = if (!useAuthorizationHeader && oauthManager.isAuthenticated) {
+            oauthManager.buildOAuthParams("GET", urlForSigning, params)
+        } else emptyMap()
+
+        val url = buildUrl(path, baseParams + oauthQueryParams)
+
         return try {
             val response = httpClient.get(url) {
-                if (oauthManager.isAuthenticated) {
-                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", url, params))
+                if (useAuthorizationHeader && oauthManager.isAuthenticated) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", urlForSigning, params))
                 }
             }
             handleResponse(response)
@@ -34,12 +41,19 @@ internal class HttpEngine(
     }
 
     suspend fun getBytes(path: String, params: Map<String, String> = emptyMap()): ByteArray {
-        val allParams = params + ("consumer_key" to oauthManager.consumerKey)
-        val url = buildUrl(path, allParams)
+        val baseParams = params + ("consumer_key" to oauthManager.consumerKey)
+        val urlForSigning = buildUrl(path, baseParams)
+
+        val oauthQueryParams = if (!useAuthorizationHeader && oauthManager.isAuthenticated) {
+            oauthManager.buildOAuthParams("GET", urlForSigning, params)
+        } else emptyMap()
+
+        val url = buildUrl(path, baseParams + oauthQueryParams)
+
         return try {
             val response = httpClient.get(url) {
-                if (oauthManager.isAuthenticated) {
-                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", url, params))
+                if (useAuthorizationHeader && oauthManager.isAuthenticated) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", urlForSigning, params))
                 }
             }
             handleResponseBytes(response)
@@ -52,13 +66,23 @@ internal class HttpEngine(
 
     suspend fun post(path: String, params: Map<String, String> = emptyMap(), forceConsumerAuth: Boolean = false): String {
         val url = "${site.baseUrl}/$path"
-        val bodyString = params.entries.joinToString("&") { "${it.key}=${it.value}" }
+        val needsOAuth = oauthManager.isAuthenticated || forceConsumerAuth
+        val effectiveCredentials = when {
+            oauthManager.isAuthenticated && !forceConsumerAuth -> oauthManager.accessCredentials()
+            else -> null  // consumer-only or not authenticated
+        }
+
+        val oauthBodyParams = if (!useAuthorizationHeader && needsOAuth) {
+            oauthManager.buildOAuthParams("POST", url, params, effectiveCredentials)
+        } else emptyMap()
+
+        val allBodyParams = params + oauthBodyParams
+        val bodyString = allBodyParams.entries.joinToString("&") { "${it.key}=${it.value}" }
+
         return try {
             val response = httpClient.post(url) {
-                if (oauthManager.isAuthenticated) {
-                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params))
-                } else if (forceConsumerAuth) {
-                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params, tokenCredentials = null))
+                if (useAuthorizationHeader && needsOAuth) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params, effectiveCredentials))
                 }
                 contentType(ContentType.Application.FormUrlEncoded)
                 setBody(bodyString)

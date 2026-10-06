@@ -97,4 +97,40 @@ class OAuthManager(
 
         return "OAuth $headerParams"
     }
+
+    internal fun buildOAuthParams(
+        method: String,
+        url: String,
+        extraParams: Map<String, String> = emptyMap(),
+        tokenCredentials: OAuthCredentials? = accessCredentials(),
+    ): Map<String, String> {
+        val timestamp = (currentTimeMillis() / 1000).toString()
+        val nonce = generateNonce()
+
+        val oauthParams = buildMap {
+            put("oauth_consumer_key", consumerKey)
+            put("oauth_nonce", nonce)
+            put("oauth_signature_method", "HMAC-SHA1")
+            put("oauth_timestamp", timestamp)
+            put("oauth_version", "1.0")
+            tokenCredentials?.let { put("oauth_token", it.token) }
+        }
+
+        val allParams = (oauthParams + extraParams)
+            .entries
+            .sortedBy { it.key }
+            .joinToString("&") { "${it.key.oauthEncode()}=${it.value.oauthEncode()}" }
+
+        val baseUrl = url.substringBefore("?")
+        val signatureBase = listOf(
+            method.uppercase(),
+            baseUrl.oauthEncode(),
+            allParams.oauthEncode(),
+        ).joinToString("&")
+
+        val signingKey = "${consumerSecret.oauthEncode()}&${(tokenCredentials?.tokenSecret ?: "").oauthEncode()}"
+        val signature = hmacSha1Base64(signingKey, signatureBase)
+
+        return oauthParams + ("oauth_signature" to signature)
+    }
 }
