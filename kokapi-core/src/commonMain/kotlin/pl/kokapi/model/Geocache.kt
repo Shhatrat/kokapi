@@ -59,4 +59,13 @@ data class Geocache(
     val lastModified: String? = null,
     val isFound: Boolean? = null,
     val isWatched: Boolean? = null,
+    val isNotFound: Boolean? = null,
+    val isIgnored: Boolean? = null,
+    val watchers: Int = 0,
+    val ratingVotes: Int? = null,
+    val myRating: Int? = null,
+    val willattends: Int = 0,
+    val needsMaintenance: Boolean? = null,
+    val myNotes: String? = null,
+    val latestLogs: List<GeocacheLog> = emptyList(),
 )

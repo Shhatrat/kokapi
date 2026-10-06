@@ -25,7 +25,7 @@ class ApiRefClientTest {
 
     @Test
     fun methodReturnsParsedApiMethod() = runTest {
-        val json = """{"method_path":"services/caches/geocache","description":"Returns info about a geocache.","fields":{"required":["cache_code"],"optional":["fields","langpref"]}}"""
+        val json = """{"name":"services/caches/geocache","brief_description":"Returns info about a geocache.","arguments":[{"name":"cache_code","is_required":true},{"name":"fields","is_required":false},{"name":"langpref","is_required":false}]}"""
         val result = clientWith(json).apiRef.method("services/caches/geocache")
         assertEquals("services/caches/geocache", result.methodPath)
         assertEquals("Returns info about a geocache.", result.description)
@@ -36,7 +36,7 @@ class ApiRefClientTest {
 
     @Test
     fun methodWithNoFieldsReturnsEmptyLists() = runTest {
-        val json = """{"method_path":"services/apisrv/stats","description":"Returns stats."}"""
+        val json = """{"name":"services/apisrv/stats","brief_description":"Returns stats.","arguments":[]}"""
         val result = clientWith(json).apiRef.method("services/apisrv/stats")
         assertEquals("services/apisrv/stats", result.methodPath)
         assertTrue(result.requiredFields.isEmpty())
@@ -45,7 +45,7 @@ class ApiRefClientTest {
 
     @Test
     fun methodIndexReturnsListOfSummaries() = runTest {
-        val json = """[{"method_path":"services/caches/geocache","description":"Returns geocache info."},{"method_path":"services/apisrv/stats","description":"Returns stats."}]"""
+        val json = """[{"name":"services/caches/geocache","brief_description":"Returns geocache info."},{"name":"services/apisrv/stats","brief_description":"Returns stats."}]"""
         val result = clientWith(json).apiRef.methodIndex()
         assertEquals(2, result.size)
         assertEquals("services/caches/geocache", result[0].methodPath)

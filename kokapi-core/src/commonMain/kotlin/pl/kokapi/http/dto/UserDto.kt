@@ -12,5 +12,6 @@ internal data class UserDto(
     @SerialName("caches_hidden") val hiddenCount: Int = 0,
     @SerialName("rcmds_given") val rcmdsGiven: Int = 0,
     @SerialName("rcmds_left") val rcmdsLeft: Int? = null,
+    @SerialName("rcmd_founds_needed") val rcmdFoundsNeeded: Int = 0,
     @SerialName("home_location") val homeLocation: String? = null,
 )

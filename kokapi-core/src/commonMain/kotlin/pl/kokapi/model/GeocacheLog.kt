@@ -25,4 +25,6 @@ data class GeocacheLog(
     val needsMaintenance: Boolean? = null,
     val dateCreated: String? = null,
     val lastModified: String? = null,
+    val location: String? = null,
+    val ocTeamEntry: Boolean = false,
 )

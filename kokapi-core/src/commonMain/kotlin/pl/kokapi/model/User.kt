@@ -20,5 +20,6 @@ data class User(
     val hiddenCount: Int,
     val rcmdsGiven: Int = 0,
     val rcmdsLeft: Int? = null,
+    val rcmdFoundsNeeded: Int = 0,
     val homeLocation: LatLon? = null,
 )

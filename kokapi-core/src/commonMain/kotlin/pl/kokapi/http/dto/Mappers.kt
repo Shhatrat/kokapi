@@ -44,6 +44,15 @@ internal fun GeocacheDto.toDomain() = Geocache(
     lastModified = lastModified,
     isFound = isFound,
     isWatched = isWatched,
+    isNotFound = isNotFound,
+    isIgnored = isIgnored,
+    watchers = watchers,
+    ratingVotes = ratingVotes,
+    myRating = myRating,
+    willattends = willattends,
+    needsMaintenance = needsMaintenance,
+    myNotes = myNotes,
+    latestLogs = latestLogs?.map { it.toDomain() } ?: emptyList(),
 )
 
 internal fun CacheImageDto.toDomain() = CacheImage(
@@ -90,6 +99,8 @@ internal fun GeocacheLogDto.toDomain() = GeocacheLog(
     needsMaintenance = needsMaintenance,
     dateCreated = dateCreated,
     lastModified = lastModified,
+    location = location,
+    ocTeamEntry = ocTeamEntry,
 )
 
 internal fun LogImageDto.toDomain() = LogImage(
@@ -108,6 +119,7 @@ internal fun UserDto.toDomain() = User(
     hiddenCount = hiddenCount,
     rcmdsGiven = rcmdsGiven,
     rcmdsLeft = rcmdsLeft,
+    rcmdFoundsNeeded = rcmdFoundsNeeded,
     homeLocation = homeLocation?.toLatLon(),
 )
 

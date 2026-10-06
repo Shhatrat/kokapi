@@ -39,6 +39,15 @@ internal data class GeocacheDto(
     @SerialName("last_modified") val lastModified: String? = null,
     @SerialName("is_found") val isFound: Boolean? = null,
     @SerialName("is_watched") val isWatched: Boolean? = null,
+    @SerialName("is_not_found") val isNotFound: Boolean? = null,
+    @SerialName("is_ignored") val isIgnored: Boolean? = null,
+    val watchers: Int = 0,
+    @SerialName("rating_votes") val ratingVotes: Int? = null,
+    @SerialName("my_rating") val myRating: Int? = null,
+    val willattends: Int = 0,
+    @SerialName("needs_maintenance") val needsMaintenance: Boolean? = null,
+    @SerialName("my_notes") val myNotes: String? = null,
+    @SerialName("latest_logs") val latestLogs: List<GeocacheLogDto>? = null,
 )
 
 @Serializable

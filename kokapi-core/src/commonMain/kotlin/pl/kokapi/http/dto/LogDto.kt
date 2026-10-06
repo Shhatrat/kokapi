@@ -16,6 +16,8 @@ internal data class GeocacheLogDto(
     @SerialName("needs_maintenance2") val needsMaintenance: Boolean? = null,
     @SerialName("date_created") val dateCreated: String? = null,
     @SerialName("last_modified") val lastModified: String? = null,
+    val location: String? = null,
+    @SerialName("oc_team_entry") val ocTeamEntry: Boolean = false,
 )
 
 @Serializable
