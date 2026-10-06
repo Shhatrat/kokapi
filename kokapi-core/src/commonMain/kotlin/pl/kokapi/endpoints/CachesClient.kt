@@ -17,7 +17,12 @@ import pl.kokapi.model.Geocache
 class CachesClient internal constructor(private val engine: HttpEngine) {
 
     private val defaultFields =
-        "code|name|location|type|status|difficulty|terrain|owner|description|hint2|url|founds|notfounds|date_created|last_found"
+        "code|name|location|type|status|difficulty|terrain|owner|attributes|description|hint2|url|" +
+        "founds|notfounds|date_created|last_found|gc_code|size2|recommendations|req_passwd|" +
+        "short_description|images|trackables_count|trackables|alt_wpts|country2|region|rating|" +
+        "trip_time|trip_distance|date_hidden|last_modified|is_found|is_not_found|is_watched|" +
+        "is_ignored|willattends|watchers|rating_votes|my_rating|needs_maintenance|my_notes|" +
+        "latest_logs"
 
     /** Fetches a single geocache by its OKAPI cache code (e.g. "OP1234"). */
     suspend fun get(code: String): Geocache {

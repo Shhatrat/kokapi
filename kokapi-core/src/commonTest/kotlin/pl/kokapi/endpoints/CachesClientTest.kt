@@ -186,4 +186,36 @@ class CachesClientTest {
         val results = clientWith("""{"results":{}}""").caches.searchAndRetrieve()
         assertEquals(0, results.size)
     }
+
+    @Test
+    fun getCachePopulatesExtendedFields() = runTest {
+        val json = """
+            {
+              "code":"OP1","name":"X","location":"50.0|20.0","type":"Traditional",
+              "status":"Available","difficulty":1.0,"terrain":1.0,
+              "owner":{"uuid":"u","username":"u"},
+              "gc_code":"GC1234","size2":"regular","recommendations":3,
+              "req_passwd":true,"willattends":2,"watchers":7,
+              "is_found":true,"is_not_found":false,"is_watched":true,"is_ignored":false,
+              "rating":4.5,"rating_votes":10,"my_rating":5,
+              "my_notes":"secret","needs_maintenance":null,
+              "latest_logs":[]
+            }
+        """.trimIndent()
+        val cache = clientWith(json).caches.get("OP1")
+        assertEquals("GC1234", cache.gcCode)
+        assertEquals("regular", cache.size2)
+        assertEquals(3, cache.recommendations)
+        assertEquals(true, cache.reqPasswd)
+        assertEquals(2, cache.willattends)
+        assertEquals(7, cache.watchers)
+        assertEquals(true, cache.isFound)
+        assertEquals(false, cache.isNotFound)
+        assertEquals(true, cache.isWatched)
+        assertEquals(false, cache.isIgnored)
+        assertEquals(4.5f, cache.rating)
+        assertEquals(10, cache.ratingVotes)
+        assertEquals(5, cache.myRating)
+        assertEquals("secret", cache.myNotes)
+    }
 }

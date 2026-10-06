@@ -9,7 +9,7 @@ import pl.kokapi.model.User
 /** Client for looking up geocacher profiles. */
 class UsersClient internal constructor(private val engine: HttpEngine) {
 
-    private val defaultFields = "uuid|username|profile_url|caches_found|caches_hidden|rcmds_given|rcmds_left|home_location"
+    private val defaultFields = "uuid|username|profile_url|caches_found|caches_hidden|rcmds_given|rcmds_left|rcmd_founds_needed|home_location"
 
     /** Looks up a user by their display name. */
     suspend fun byUsername(username: String): User {

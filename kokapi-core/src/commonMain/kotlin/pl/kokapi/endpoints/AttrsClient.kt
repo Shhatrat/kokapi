@@ -15,7 +15,7 @@ class AttrsClient internal constructor(private val engine: HttpEngine) {
         val body = engine.get(
             "attrs/attributes", mapOf(
                 "acodes" to acodes.joinToString("|"),
-                "fields" to "acode|name",
+                "fields" to "acode|name|local_icon_url|description",
             )
         )
         return json.decodeFromString<Map<String, AttributeDto>>(body).values.map { it.toDomain() }
@@ -26,7 +26,7 @@ class AttrsClient internal constructor(private val engine: HttpEngine) {
         val body = engine.get(
             "attrs/attribute", mapOf(
                 "acode" to acode,
-                "fields" to "acode|name|names",
+                "fields" to "acode|name|names|local_icon_url|description",
             )
         )
         return json.decodeFromString<AttributeFullDto>(body).toDomain()

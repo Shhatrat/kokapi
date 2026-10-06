@@ -15,7 +15,7 @@ import pl.kokapi.model.enum.LogType
 /** Client for reading, submitting, and managing geocache log entries and their photos. */
 class LogsClient internal constructor(private val engine: HttpEngine) {
 
-    private val defaultFields = "uuid|cache_code|user|type|date|comment"
+    private val defaultFields = "uuid|cache_code|user|type|date|comment|images|was_recommended|needs_maintenance2|date_created|last_modified|location|oc_team_entry"
 
     /** Fetches a single log entry by its UUID. */
     suspend fun get(logUuid: String): GeocacheLog {

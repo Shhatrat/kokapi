@@ -134,4 +134,19 @@ class LogsClientTest {
     fun deleteImageDoesNotThrow() = runTest {
         clientWith("{}").logs.deleteImage("img-1")
     }
+
+    @Test
+    fun getLogPopulatesExtendedFields() = runTest {
+        val json = """
+            {"uuid":"l1","cache_code":"OP1","user":{"uuid":"u","username":"u"},
+             "type":"Found it","date":"2026-01-01","comment":"Hi",
+             "location":"50.1|20.2","oc_team_entry":true,
+             "was_recommended":true,"needs_maintenance2":false}
+        """.trimIndent()
+        val log = clientWith(json).logs.get("l1")
+        assertEquals("50.1|20.2", log.location)
+        assertEquals(true, log.ocTeamEntry)
+        assertEquals(true, log.wasRecommended)
+        assertEquals(false, log.needsMaintenance)
+    }
 }
