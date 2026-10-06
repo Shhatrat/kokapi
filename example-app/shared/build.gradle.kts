@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
@@ -11,6 +13,10 @@ kotlin {
     }
     jvm("desktop") {
         compilations.all { kotlinOptions { jvmTarget = "17" } }
+    }
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
     }
     sourceSets {
         commonMain.dependencies {
@@ -28,6 +34,11 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.cio)
+            }
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.js)
             }
         }
     }
