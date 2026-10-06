@@ -5,19 +5,20 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class ApiMethodDto(
-    @SerialName("method_path") val methodPath: String = "",
+    val name: String = "",
+    @SerialName("brief_description") val briefDescription: String = "",
     val description: String = "",
-    @SerialName("fields") val fields: ApiMethodFieldsDto? = null,
+    val arguments: List<ApiMethodArgumentDto> = emptyList(),
 )
 
 @Serializable
-internal data class ApiMethodFieldsDto(
-    val required: List<String> = emptyList(),
-    val optional: List<String> = emptyList(),
+internal data class ApiMethodArgumentDto(
+    val name: String = "",
+    @SerialName("is_required") val isRequired: Boolean = false,
 )
 
 @Serializable
 internal data class ApiMethodSummaryDto(
-    @SerialName("method_path") val methodPath: String = "",
-    val description: String = "",
+    val name: String = "",
+    @SerialName("brief_description") val briefDescription: String = "",
 )

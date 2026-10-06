@@ -17,13 +17,13 @@ class ApiRefClient internal constructor(private val engine: HttpEngine) {
      * @param methodPath OKAPI method path, e.g. "services/caches/geocache".
      */
     suspend fun method(methodPath: String): ApiMethod {
-        val body = engine.get("apiref/method", mapOf("method_path" to methodPath))
+        val body = engine.get("apiref/method", mapOf("name" to methodPath))
         val dto = json.decodeFromString<ApiMethodDto>(body)
         return ApiMethod(
-            methodPath = dto.methodPath,
-            description = dto.description,
-            availableFields = (dto.fields?.optional ?: emptyList()) + (dto.fields?.required ?: emptyList()),
-            requiredFields = dto.fields?.required ?: emptyList(),
+            methodPath = dto.name,
+            description = dto.briefDescription,
+            availableFields = dto.arguments.map { it.name },
+            requiredFields = dto.arguments.filter { it.isRequired }.map { it.name },
         )
     }
 
@@ -32,8 +32,8 @@ class ApiRefClient internal constructor(private val engine: HttpEngine) {
         val body = engine.get("apiref/method_index", emptyMap())
         return json.decodeFromString<List<ApiMethodSummaryDto>>(body).map { dto ->
             ApiMethodSummary(
-                methodPath = dto.methodPath,
-                description = dto.description,
+                methodPath = dto.name,
+                description = dto.briefDescription,
             )
         }
     }
