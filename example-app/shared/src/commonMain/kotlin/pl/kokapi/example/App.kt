@@ -1,72 +1,61 @@
 package pl.kokapi.example
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import pl.kokapi.KokapiClient
-import pl.kokapi.error.KokapiException
-import pl.kokapi.model.Geocache
+import pl.kokapi.example.screens.*
 
 @Composable
 fun App(kokapi: KokapiClient) {
-    var caches by remember { mutableStateOf<List<Geocache>>(emptyList()) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        loading = true
-        error = null
-        runCatching { kokapi.caches.search(lat = 50.0619, lon = 19.9368, radiusKm = 10.0) }
-            .onSuccess { caches = it }
-            .onFailure { e ->
-                error = when (e) {
-                    is KokapiException.NetworkError -> "Network unavailable"
-                    is KokapiException.ApiError -> "API error: ${e.errorCode}"
-                    else -> e.message ?: "Unknown error"
-                }
-            }
-        loading = false
-    }
-
     MaterialTheme {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text("KoKAPI Example", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(8.dp))
-            error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp))
-            }
-            if (loading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            } else {
-                Text("Caches near Kraków: ${caches.size}", style = MaterialTheme.typography.labelMedium)
-                Spacer(Modifier.height(8.dp))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(caches) { CacheCard(it) }
+        var tab by remember { mutableStateOf(0) }
+        Scaffold(
+            bottomBar = {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = tab == 0,
+                        onClick = { tab = 0 },
+                        icon = {},
+                        label = { Text("Caches") }
+                    )
+                    NavigationBarItem(
+                        selected = tab == 1,
+                        onClick = { tab = 1 },
+                        icon = {},
+                        label = { Text("Users") }
+                    )
+                    NavigationBarItem(
+                        selected = tab == 2,
+                        onClick = { tab = 2 },
+                        icon = {},
+                        label = { Text("Attrs") }
+                    )
+                    NavigationBarItem(
+                        selected = tab == 3,
+                        onClick = { tab = 3 },
+                        icon = {},
+                        label = { Text("API Info") }
+                    )
+                    NavigationBarItem(
+                        selected = tab == 4,
+                        onClick = { tab = 4 },
+                        icon = {},
+                        label = { Text("Auth") }
+                    )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CacheCard(cache: Geocache) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
-            Text(cache.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                "${cache.code} · ${cache.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                "D${cache.difficulty} / T${cache.terrain} · ${cache.founds} finds",
-                style = MaterialTheme.typography.bodySmall,
-            )
+        ) { padding ->
+            Box(modifier = androidx.compose.ui.Modifier.padding(padding)) {
+                when (tab) {
+                    0 -> CachesScreen(kokapi)
+                    1 -> UsersScreen(kokapi)
+                    2 -> AttrsScreen(kokapi)
+                    3 -> ApiInfoScreen(kokapi)
+                    4 -> AuthScreen(kokapi)
+                }
+            }
         }
     }
 }
