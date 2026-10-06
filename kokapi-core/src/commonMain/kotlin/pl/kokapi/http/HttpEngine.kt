@@ -33,6 +33,23 @@ internal class HttpEngine(
         }
     }
 
+    suspend fun getBytes(path: String, params: Map<String, String> = emptyMap()): ByteArray {
+        val allParams = params + ("consumer_key" to oauthManager.consumerKey)
+        val url = buildUrl(path, allParams)
+        return try {
+            val response = httpClient.get(url) {
+                if (oauthManager.isAuthenticated) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", url, params))
+                }
+            }
+            handleResponseBytes(response)
+        } catch (e: KokapiException) {
+            throw e
+        } catch (e: Exception) {
+            throw KokapiException.NetworkError
+        }
+    }
+
     suspend fun post(path: String, params: Map<String, String> = emptyMap()): String {
         val url = "${site.baseUrl}/$path"
         val bodyString = params.entries.joinToString("&") { "${it.key}=${it.value}" }
@@ -65,6 +82,20 @@ internal class HttpEngine(
             response.status == HttpStatusCode.Unauthorized ->
                 throw KokapiException.NotAuthenticated
             response.status.value in 400..499 -> {
+                val errorCode = extractErrorCode(body)
+                throw KokapiException.ApiError(errorCode, body)
+            }
+            else -> throw KokapiException.HttpError(response.status.value, response.status.description)
+        }
+    }
+
+    private suspend fun handleResponseBytes(response: HttpResponse): ByteArray {
+        return when {
+            response.status.isSuccess() -> response.readRawBytes()
+            response.status == HttpStatusCode.Unauthorized ->
+                throw KokapiException.NotAuthenticated
+            response.status.value in 400..499 -> {
+                val body = response.bodyAsText()
                 val errorCode = extractErrorCode(body)
                 throw KokapiException.ApiError(errorCode, body)
             }

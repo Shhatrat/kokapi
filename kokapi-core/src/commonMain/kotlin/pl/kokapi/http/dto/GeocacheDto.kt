@@ -91,3 +91,18 @@ internal data class GeocachesResultDto(
     val results: Map<String, GeocacheDto>,
     val more: Boolean = false,
 )
+
+@Serializable
+internal data class SearchSaveResultDto(
+    @SerialName("set_id") val setId: String,
+)
+
+@Serializable
+internal data class SearchAndRetrieveResultDto(
+    val results: Map<String, GeocacheDto>,
+)
+
+@Serializable
+internal data class SuccessDto(
+    val success: Boolean,
+)

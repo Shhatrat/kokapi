@@ -33,4 +33,6 @@ class KokapiClient(
     val replicate: ReplicateClient = ReplicateClient(engine)
     val auth: AuthClient = AuthClient(oauthManager, engine)
     val apiSrv: ApiSrvClient = ApiSrvClient(engine)
+    val formatters: FormattersClient = FormattersClient(engine)
+    val apiRef: ApiRefClient = ApiRefClient(engine)
 }

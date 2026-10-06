@@ -116,4 +116,74 @@ class CachesClientTest {
     fun savePersonalNotesDoesNotThrow() = runTest {
         clientWith("{}").caches.savePersonalNotes("OP1", "My note")
     }
+
+    @Test
+    fun editDoesNotThrowOnSuccess() = runTest {
+        clientWith("""{"success":true}""").caches.edit("OP1234")
+    }
+
+    @Test
+    fun editWithPasswdDoesNotThrow() = runTest {
+        clientWith("""{"success":true}""").caches.edit("OP1234", passwd = "secret")
+    }
+
+    @Test
+    fun editThrowsOnSuccessFalse() = runTest {
+        assertFailsWith<KokapiException.ApiError> {
+            clientWith("""{"success":false}""").caches.edit("OP1234")
+        }
+    }
+
+    @Test
+    fun searchByUrlsReturnsList() = runTest {
+        val searchCodesJson = """{"results":["OP1"],"more":false}"""
+        val geocachesJson = """{"OP1":{"code":"OP1","name":"C1","location":"51.0|20.0","type":"Traditional","status":"Available","difficulty":1.0,"terrain":1.0,"owner":{"uuid":"u","username":"u"}}}"""
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine { request ->
+                val body = if (request.url.encodedPath.contains("by_urls")) searchCodesJson else geocachesJson
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
+        )
+        val results = client.caches.searchByUrls(listOf("https://opencaching.pl/viewcache.php?wp=OP1"))
+        assertEquals(1, results.size)
+        assertEquals("OP1", results[0].code)
+    }
+
+    @Test
+    fun searchByUrlsReturnsEmptyListForEmptyResults() = runTest {
+        val client = clientWith("""{"results":[],"more":false}""")
+        val results = client.caches.searchByUrls(listOf("https://opencaching.pl/viewcache.php?wp=OPXXX"))
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun searchSaveReturnsSetId() = runTest {
+        val client = clientWith("""{"set_id":"abc123"}""")
+        val setId = client.caches.searchSave()
+        assertEquals("abc123", setId)
+    }
+
+    @Test
+    fun searchSaveWithParamsReturnsSetId() = runTest {
+        val client = clientWith("""{"set_id":"xyz789"}""")
+        val setId = client.caches.searchSave(type = listOf("Traditional"), limit = 50)
+        assertEquals("xyz789", setId)
+    }
+
+    @Test
+    fun searchAndRetrieveReturnsList() = runTest {
+        val responseJson = """{"results":{"OP1":{"code":"OP1","name":"C1","location":"51.0|20.0","type":"Traditional","status":"Available","difficulty":1.0,"terrain":1.0,"owner":{"uuid":"u","username":"u"}}}}"""
+        val results = clientWith(responseJson).caches.searchAndRetrieve()
+        assertEquals(1, results.size)
+        assertEquals("OP1", results[0].code)
+    }
+
+    @Test
+    fun searchAndRetrieveReturnsEmptyList() = runTest {
+        val results = clientWith("""{"results":{}}""").caches.searchAndRetrieve()
+        assertEquals(0, results.size)
+    }
 }
