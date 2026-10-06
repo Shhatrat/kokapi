@@ -9,5 +9,5 @@ internal data class UserDto(
     val username: String,
     @SerialName("profile_url") val profileUrl: String = "",
     @SerialName("caches_found") val cachesFound: Int = 0,
-    @SerialName("hidden_count") val hiddenCount: Int = 0,
+    @SerialName("caches_hidden") val hiddenCount: Int = 0,
 )

@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import pl.kokapi.http.HttpEngine
 import pl.kokapi.http.dto.GeocacheDto
-import pl.kokapi.http.dto.GeocachesResultDto
+import pl.kokapi.http.dto.SearchResultDto
 import pl.kokapi.http.dto.toDomain
 import pl.kokapi.http.json
 import pl.kokapi.model.Geocache
@@ -12,7 +12,7 @@ import pl.kokapi.model.Geocache
 class CachesClient internal constructor(private val engine: HttpEngine) {
 
     private val defaultFields =
-        "code|name|location|type|status|difficulty|terrain|owner|attributes|description|hint2|url|founds|notfounds|date_created|last_found"
+        "code|name|location|type|status|difficulty|terrain|owner|description|hint2|url|founds|notfounds|date_created|last_found"
 
     suspend fun get(code: String): Geocache {
         val body = engine.get(
@@ -47,11 +47,12 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             put("radius", radiusKm.toString())
             put("limit", limit.toString())
             put("offset", offset.toString())
-            put("fields", defaultFields)
             type?.let { put("type", it) }
         }
         val body = engine.get("caches/search/nearest", params)
-        return json.decodeFromString<GeocachesResultDto>(body).results.values.map { it.toDomain() }
+        val codes = json.decodeFromString<SearchResultDto>(body).results
+        if (codes.isEmpty()) return emptyList()
+        return getMultiple(codes)
     }
 
     suspend fun bbox(
@@ -65,10 +66,11 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             "caches/search/bbox", mapOf(
                 "bbox" to "$southLat|$westLon|$northLat|$eastLon",
                 "limit" to limit.toString(),
-                "fields" to defaultFields,
             )
         )
-        return json.decodeFromString<GeocachesResultDto>(body).results.values.map { it.toDomain() }
+        val codes = json.decodeFromString<SearchResultDto>(body).results
+        if (codes.isEmpty()) return emptyList()
+        return getMultiple(codes)
     }
 
     fun searchFlow(

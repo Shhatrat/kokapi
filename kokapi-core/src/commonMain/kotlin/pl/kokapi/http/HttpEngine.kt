@@ -21,7 +21,9 @@ internal class HttpEngine(
         val url = buildUrl(path, allParams)
         return try {
             val response = httpClient.get(url) {
-                header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", url, params))
+                if (oauthManager.isAuthenticated) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", url, params))
+                }
             }
             handleResponse(response)
         } catch (e: KokapiException) {
@@ -36,7 +38,9 @@ internal class HttpEngine(
         val bodyString = params.entries.joinToString("&") { "${it.key}=${it.value}" }
         return try {
             val response = httpClient.post(url) {
-                header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params))
+                if (oauthManager.isAuthenticated) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("POST", url, params))
+                }
                 contentType(ContentType.Application.FormUrlEncoded)
                 setBody(bodyString)
             }
@@ -49,8 +53,9 @@ internal class HttpEngine(
     }
 
     private fun buildUrl(path: String, params: Map<String, String>): String {
-        val query = params.entries.joinToString("&") { "${it.key}=${it.value}" }
-        return "${site.baseUrl}/$path?$query"
+        val builder = URLBuilder("${site.baseUrl}/$path")
+        params.forEach { (key, value) -> builder.parameters.append(key, value) }
+        return builder.buildString()
     }
 
     private suspend fun handleResponse(response: HttpResponse): String {
@@ -67,6 +72,11 @@ internal class HttpEngine(
         }
     }
 
-    private fun extractErrorCode(body: String): String =
-        Regex(""""error"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1) ?: "unknown_error"
+    private fun extractErrorCode(body: String): String {
+        // OKAPI format: {"error":{"reason_stack":["bad_request"],"developer_message":"..."}}
+        val reasonStack = Regex(""""reason_stack"\s*:\s*\[\s*"([^"]+)"""").find(body)?.groupValues?.get(1)
+        if (reasonStack != null) return reasonStack
+        // fallback: {"error":"string"}
+        return Regex(""""error"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1) ?: "unknown_error"
+    }
 }

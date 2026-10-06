@@ -8,7 +8,7 @@ import pl.kokapi.model.User
 
 class UsersClient internal constructor(private val engine: HttpEngine) {
 
-    private val defaultFields = "uuid|username|profile_url|caches_found|hidden_count"
+    private val defaultFields = "uuid|username|profile_url|caches_found|caches_hidden"
 
     suspend fun byUsername(username: String): User {
         val body = engine.get(

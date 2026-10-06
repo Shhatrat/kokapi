@@ -9,9 +9,14 @@ import pl.kokapi.model.Attribute
 
 class AttrsClient internal constructor(private val engine: HttpEngine) {
 
-    suspend fun attributes(): List<Attribute> {
-        val body = engine.get("attrs/attributes", mapOf("fields" to "acode|name"))
-        return json.decodeFromString<List<AttributeDto>>(body).map { it.toDomain() }
+    suspend fun attributes(acodes: List<String>): List<Attribute> {
+        val body = engine.get(
+            "attrs/attributes", mapOf(
+                "acodes" to acodes.joinToString("|"),
+                "fields" to "acode|name",
+            )
+        )
+        return json.decodeFromString<Map<String, AttributeDto>>(body).values.map { it.toDomain() }
     }
 
     suspend fun attribute(acode: String): Attribute {

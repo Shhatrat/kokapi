@@ -33,8 +33,8 @@ class AttrsClientTest {
 
     @Test
     fun getAttributesListReturnsList() = runTest {
-        val json = """[{"acode":"A1","name":"Dogs"},{"acode":"A2-0","name":"No bikes"}]"""
-        val attrs = clientWith(json).attrs.attributes()
+        val json = """{"A1":{"acode":"A1","name":"Dogs"},"A2-0":{"acode":"A2-0","name":"No bikes"}}"""
+        val attrs = clientWith(json).attrs.attributes(listOf("A1", "A2-0"))
         assertEquals(2, attrs.size)
     }
 }

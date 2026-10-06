@@ -72,21 +72,20 @@ class CachesClientTest {
         }
     }
 
-    private val searchAndRetrieveJson = """
-        {
-          "results": {
-            "OP1": {"code":"OP1","name":"C1","location":"51.0|20.0","type":"Traditional","status":"Available","difficulty":1.0,"terrain":1.0,"owner":{"uuid":"u","username":"u"},"attributes":[]},
-            "OP2": {"code":"OP2","name":"C2","location":"51.1|20.1","type":"Multi","status":"Available","difficulty":2.0,"terrain":2.0,"owner":{"uuid":"u","username":"u"},"attributes":[]}
-          },
-          "more": false
-        }
-    """.trimIndent()
-
     @Test
     fun searchReturnsList() = runTest {
-        val results = clientWith(searchAndRetrieveJson).caches.search(
-            lat = 51.0, lon = 20.0, radiusKm = 5.0
+        val searchCodesJson = """{"results":["OP1","OP2"],"more":false}"""
+        val geocachesJson = """{"OP1":{"code":"OP1","name":"C1","location":"51.0|20.0","type":"Traditional","status":"Available","difficulty":1.0,"terrain":1.0,"owner":{"uuid":"u","username":"u"}},"OP2":{"code":"OP2","name":"C2","location":"51.1|20.1","type":"Multi","status":"Available","difficulty":2.0,"terrain":2.0,"owner":{"uuid":"u","username":"u"}}}"""
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine { request ->
+                val body = if (request.url.encodedPath.contains("search")) searchCodesJson else geocachesJson
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
         )
+        val results = client.caches.search(lat = 51.0, lon = 20.0, radiusKm = 5.0)
         assertEquals(2, results.size)
     }
 }
