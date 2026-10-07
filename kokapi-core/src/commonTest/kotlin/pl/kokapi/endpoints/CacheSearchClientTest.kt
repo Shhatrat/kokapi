@@ -187,4 +187,49 @@ class CacheSearchClientTest {
         assertEquals("OP1", collected[0].code)
         assertEquals("OP2", collected[1].code)
     }
+
+    @Test
+    fun bboxFlowEmitsAllCaches() = runTest {
+        var callCount = 0
+        val responses = listOf(
+            """{"results":["OP1","OP2"],"more":true}""",
+            """{"OP1":{"code":"OP1","name":"A","location":"52.0|21.0","type":"Traditional","status":"Available"},"OP2":{"code":"OP2","name":"B","location":"52.0|21.0","type":"Traditional","status":"Available"}}""",
+            """{"results":[],"more":false}""",
+        )
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine {
+                respond(responses[callCount++], HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
+        )
+        val collected = mutableListOf<pl.kokapi.model.Geocache>()
+        client.search.bboxFlow(50.0, 19.0, 51.0, 21.0, pageSize = 2).collect { collected.add(it) }
+        assertEquals(2, collected.size)
+        assertEquals("OP1", collected[0].code)
+        assertEquals("OP2", collected[1].code)
+    }
+
+    @Test
+    fun allFlowEmitsAllCaches() = runTest {
+        var callCount = 0
+        val responses = listOf(
+            """{"results":["OP1"],"more":true}""",
+            """{"OP1":{"code":"OP1","name":"A","location":"52.0|21.0","type":"Traditional","status":"Available"}}""",
+            """{"results":[],"more":false}""",
+        )
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine {
+                respond(responses[callCount++], HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
+        )
+        val collected = mutableListOf<pl.kokapi.model.Geocache>()
+        client.search.allFlow(pageSize = 1).collect { collected.add(it) }
+        assertEquals(1, collected.size)
+        assertEquals("OP1", collected[0].code)
+    }
 }

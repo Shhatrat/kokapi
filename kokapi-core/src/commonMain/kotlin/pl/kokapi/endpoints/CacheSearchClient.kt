@@ -157,4 +157,52 @@ class CacheSearchClient internal constructor(
             offset += pageSize
         }
     }
+
+    /**
+     * Kotlin Flow that paginates through a bounding-box search automatically.
+     *
+     * Emits each [Geocache] individually. Pagination stops when a page returns fewer
+     * items than [pageSize].
+     *
+     * @param pageSize Number of caches fetched per page.
+     * @param filters Additional filter options (limit and offset are managed internally).
+     */
+    fun bboxFlow(
+        southLat: Double,
+        westLon: Double,
+        northLat: Double,
+        eastLon: Double,
+        pageSize: Int = 100,
+        filters: SearchFilters = SearchFilters(),
+    ): Flow<Geocache> = flow {
+        var offset = 0
+        while (true) {
+            val page = bbox(southLat, westLon, northLat, eastLon, filters.copy(limit = pageSize, offset = offset))
+            page.forEach { emit(it) }
+            if (page.size < pageSize) break
+            offset += pageSize
+        }
+    }
+
+    /**
+     * Kotlin Flow that paginates through a site-wide search automatically.
+     *
+     * Emits each [Geocache] individually. Pagination stops when a page returns fewer
+     * items than [pageSize].
+     *
+     * @param pageSize Number of caches fetched per page.
+     * @param filters Additional filter options (limit and offset are managed internally).
+     */
+    fun allFlow(
+        pageSize: Int = 100,
+        filters: SearchFilters = SearchFilters(),
+    ): Flow<Geocache> = flow {
+        var offset = 0
+        while (true) {
+            val page = all(filters.copy(limit = pageSize, offset = offset))
+            page.forEach { emit(it) }
+            if (page.size < pageSize) break
+            offset += pageSize
+        }
+    }
 }
