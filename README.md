@@ -86,6 +86,8 @@ kokapi.caches.mark("OP1234", watched = true)
 | `kokapi.search` | `save` | | Save a search on the server and return its set ID |
 | `kokapi.search` | `byUrls` | | Find caches by their opencaching.pl URLs |
 | `kokapi.search` | `flow` | | Auto-paginating Kotlin Flow for nearest search |
+| `kokapi.search` | `bboxFlow` | | Auto-paginating Kotlin Flow for bbox search |
+| `kokapi.search` | `allFlow` | | Auto-paginating Kotlin Flow for site-wide search |
 
 ### Logs
 

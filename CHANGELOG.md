@@ -16,8 +16,11 @@ All notable changes to KoKAPI are documented here. Follows [Keep a Changelog](ht
   - `client.search.save(filters)`
   - `client.search.andRetrieve(filters)`
   - `client.search.flow(lat, lon, radiusKm, pageSize, filters)`
+  - `client.search.bboxFlow(southLat, westLon, northLat, eastLon, pageSize, filters)`
+  - `client.search.allFlow(pageSize, filters)`
 - `CachesClient` now only handles fetch/manage operations: `get`, `getMultiple`, `mark`, `savePersonalNotes`, `edit`.
-- 143 tests total (16 new `CacheSearchClientTest` unit tests).
+- `Callbacks.kt` expanded from 5 to 16 wrappers covering caches, search, logs, and users.
+- 145 tests total.
 
 ---
 

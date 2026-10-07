@@ -19,6 +19,7 @@ class KokapiClientTest {
             httpClient = HttpClient(MockEngine { respond("", HttpStatusCode.OK) })
         )
         assertNotNull(client.caches)
+        assertNotNull(client.search)
         assertNotNull(client.logs)
         assertNotNull(client.users)
         assertNotNull(client.attrs)

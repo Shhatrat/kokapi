@@ -70,6 +70,8 @@ Biblioteka implementuje wszystkie główne endpointy OKAPI wraz z pełnym zestaw
 | attrs/attributes | `AttrsClient.attributes()` |
 | attrs/attribute_index | `AttrsClient.attributeIndex()` |
 | replicate/changelog | `ReplicateClient.changelog()` |
+| replicate/changelog (all) | `ReplicateClient.changelogAll()` |
+| replicate/current_revision | `ReplicateClient.currentRevision()` |
 | replicate/fulldump | `ReplicateClient.fullDump()` |
 | replicate/info | `ReplicateClient.info()` |
 | apisrv/installation | `ApiSrvClient.installation()` |
