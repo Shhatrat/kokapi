@@ -28,16 +28,16 @@ class FormattersClient internal constructor(private val engine: HttpEngine) {
         altWpts: Boolean = false,
         markFound: Boolean = false,
     ): String {
-        val params = mapOf(
-            "cache_codes" to cacheCodes.joinToString("|"),
-            "langpref" to langpref,
-            "ns_ground" to nsGround.toString(),
-            "ns_ox" to nsOx.toString(),
-            "images" to images.toString(),
-            "trackables" to trackables.toString(),
-            "alt_wpts" to altWpts.toString(),
-            "mark_found" to markFound.toString(),
-        )
+        val params = buildMap {
+            put("cache_codes", cacheCodes.joinToString("|"))
+            put("langpref", langpref)
+            if (nsGround) put("ns_ground", "true")
+            if (nsOx) put("ns_ox", "true")
+            if (images) put("images", "true")
+            if (trackables) put("trackables", "true")
+            if (altWpts) put("alt_wpts", "true")
+            if (markFound) put("mark_found", "true")
+        }
         return engine.get("caches/formatters/gpx", params)
     }
 
@@ -52,12 +52,12 @@ class FormattersClient internal constructor(private val engine: HttpEngine) {
         images: Boolean = false,
         trackables: Boolean = false,
     ): ByteArray {
-        val params = mapOf(
-            "cache_codes" to cacheCodes.joinToString("|"),
-            "langpref" to langpref,
-            "images" to images.toString(),
-            "trackables" to trackables.toString(),
-        )
+        val params = buildMap {
+            put("cache_codes", cacheCodes.joinToString("|"))
+            put("langpref", langpref)
+            if (images) put("images", "true")
+            if (trackables) put("trackables", "true")
+        }
         return engine.getBytes("caches/formatters/garmin", params)
     }
 
@@ -72,12 +72,12 @@ class FormattersClient internal constructor(private val engine: HttpEngine) {
         images: Boolean = false,
         trackables: Boolean = false,
     ): ByteArray {
-        val params = mapOf(
-            "cache_codes" to cacheCodes.joinToString("|"),
-            "langpref" to langpref,
-            "images" to images.toString(),
-            "trackables" to trackables.toString(),
-        )
+        val params = buildMap {
+            put("cache_codes", cacheCodes.joinToString("|"))
+            put("langpref", langpref)
+            if (images) put("images", "true")
+            if (trackables) put("trackables", "true")
+        }
         return engine.getBytes("caches/formatters/ggz", params)
     }
 

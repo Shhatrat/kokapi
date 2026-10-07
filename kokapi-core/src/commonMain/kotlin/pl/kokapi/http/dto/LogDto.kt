@@ -6,14 +6,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class GeocacheLogDto(
     val uuid: String,
-    @SerialName("cache_code") val cacheCode: String,
+    @SerialName("cache_code") val cacheCode: String = "",
     val user: UserRefDto,
     val type: String,
     val date: String,
     val comment: String = "",
     val images: List<LogImageDto>? = null,
     @SerialName("was_recommended") val wasRecommended: Boolean = false,
-    @SerialName("needs_maintenance2") val needsMaintenance: Boolean? = null,
+    @SerialName("needs_maintenance2") val needsMaintenance: String? = null,
     @SerialName("date_created") val dateCreated: String? = null,
     @SerialName("last_modified") val lastModified: String? = null,
     val location: String? = null,

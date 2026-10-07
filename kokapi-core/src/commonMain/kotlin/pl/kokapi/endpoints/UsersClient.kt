@@ -44,7 +44,7 @@ class UsersClient internal constructor(private val engine: HttpEngine) {
         return json.decodeFromString<Map<String, UserDto>>(body).mapValues { it.value.toDomain() }
     }
 
-    /** Looks up multiple users by their display names; returns a username-keyed map. */
+    /** Looks up multiple users by their display names; returns a username-keyed map (non-existent users are omitted). */
     suspend fun byUsernames(usernames: List<String>): Map<String, User> {
         val body = engine.get(
             "users/by_usernames", mapOf(
@@ -52,7 +52,9 @@ class UsersClient internal constructor(private val engine: HttpEngine) {
                 "fields" to defaultFields,
             )
         )
-        return json.decodeFromString<Map<String, UserDto>>(body).mapValues { it.value.toDomain() }
+        return json.decodeFromString<Map<String, UserDto?>>(body)
+            .filterValues { it != null }
+            .mapValues { it.value!!.toDomain() }
     }
 
     /** Looks up a user by the site's internal numeric ID. */

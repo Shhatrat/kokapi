@@ -61,7 +61,13 @@ internal data class GeocacheDto(
     val bearing: String? = null,
     @SerialName("internal_id") val internalId: Int? = null,
     val oxsize: Float? = null,
-    @SerialName("protection_areas") val protectionAreas: List<String>? = null,
+    @SerialName("protection_areas") val protectionAreas: List<ProtectionAreaDto>? = null,
+)
+
+@Serializable
+internal data class ProtectionAreaDto(
+    val type: String = "",
+    val name: String = "",
 )
 
 @Serializable
@@ -106,7 +112,7 @@ internal data class AttributeDto(
 @Serializable
 internal data class SearchResultDto(
     val results: List<String>,
-    val more: Boolean,
+    val more: Boolean = false,
 )
 
 @Serializable

@@ -25,18 +25,19 @@ class ReplicateClientTest {
 
     @Test
     fun infoReturnsParsedModel() = runTest {
-        val json = """{"revision":1962,"fulldump_url":"https://opencaching.pl/okapi/fulldump.tar.gz"}"""
+        val json = """{"changelog":{"revision":1962,"min_since":1000},"latest_fulldump":{"revision":1950,"generated_at":"2026-01-01","size":1000}}"""
         val info = clientWith(json).replicate.info()
         assertEquals(1962L, info.revision)
-        assertEquals("https://opencaching.pl/okapi/fulldump.tar.gz", info.fulldumpUrl)
+        assertEquals(1000L, info.minSince)
+        assertEquals(1950L, info.latestFulldumpRevision)
     }
 
     @Test
-    fun infoWithNullFulDumpUrl() = runTest {
-        val json = """{"revision":100}"""
+    fun infoWithNullFulldump() = runTest {
+        val json = """{"changelog":{"revision":100,"min_since":50}}"""
         val info = clientWith(json).replicate.info()
         assertEquals(100L, info.revision)
-        assertNull(info.fulldumpUrl)
+        assertNull(info.latestFulldumpRevision)
     }
 
     @Test
@@ -48,18 +49,18 @@ class ReplicateClientTest {
 
     @Test
     fun changelogReturnsParsedChangelog() = runTest {
-        val json = """{"revision":1962,"more":false,"changelog":[{"action":"replace","cache_code":"OP1234","change_type":"other"}]}"""
+        val json = """{"revision":1962,"more":false,"changelog":[{"object_type":"geocache","object_key":{"code":"OP1234"},"change_type":"replace"}]}"""
         val changelog = clientWith(json).replicate.changelog(1900L)
         assertEquals(1962L, changelog.revision)
         assertEquals(false, changelog.more)
         assertEquals(1, changelog.changelog.size)
-        assertEquals("replace", changelog.changelog[0].action)
+        assertEquals("replace", changelog.changelog[0].changeType)
         assertEquals("OP1234", changelog.changelog[0].cacheCode)
     }
 
     @Test
     fun currentRevisionReturnsLong() = runTest {
-        val json = """{"revision":1962,"more":false,"changelog":[]}"""
+        val json = """{"changelog":{"revision":1962,"min_since":1000}}"""
         val revision = clientWith(json).replicate.currentRevision()
         assertEquals(1962L, revision)
     }
@@ -67,8 +68,8 @@ class ReplicateClientTest {
     @Test
     fun changelogEntryHasObjectType() = runTest {
         val json = """{"revision":100,"more":false,"changelog":[
-            {"action":"replace","cache_code":"OP1","object_type":"geocache","change_type":"attr_changed"},
-            {"action":"replace","log_uuid":"some-uuid","object_type":"log_entry"}
+            {"object_type":"geocache","object_key":{"code":"OP1"},"change_type":"replace"},
+            {"object_type":"log_entry","object_key":{"uuid":"some-uuid"},"change_type":"replace"}
         ]}"""
         val result = clientWith(json).replicate.changelog(0L)
         assertEquals(ChangelogObjectType.GEOCACHE, result.changelog[0].objectType)
@@ -81,8 +82,8 @@ class ReplicateClientTest {
     fun changelogAllFetchesAllPages() = runTest {
         var callCount = 0
         val responses = listOf(
-            """{"revision":50,"more":true,"changelog":[{"action":"replace","object_type":"geocache","cache_code":"OP1"}]}""",
-            """{"revision":100,"more":false,"changelog":[{"action":"replace","object_type":"geocache","cache_code":"OP2"}]}""",
+            """{"revision":50,"more":true,"changelog":[{"object_type":"geocache","object_key":{"code":"OP1"},"change_type":"replace"}]}""",
+            """{"revision":100,"more":false,"changelog":[{"object_type":"geocache","object_key":{"code":"OP2"},"change_type":"replace"}]}""",
         )
         val client = KokapiClient(
             site = KokapiSite.OPENCACHING_PL,

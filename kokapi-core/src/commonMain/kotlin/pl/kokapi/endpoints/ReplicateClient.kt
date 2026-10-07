@@ -16,25 +16,36 @@ enum class ChangelogObjectType {
     UNKNOWN,
 }
 
+/**
+ * The key identifying which object was changed.
+ *
+ * For `geocache` entries: [code] is set. For `log_entry` entries: [uuid] is set.
+ */
+@Serializable
+data class ChangelogObjectKey(
+    val code: String? = null,
+    val uuid: String? = null,
+)
+
 /** A single change event in the OKAPI replication changelog. */
 @Serializable
 data class ChangelogEntry(
-    /** Action type — "replace" means the object was created/updated, "delete" means it was removed. */
-    val action: String,
-    /** Cache code affected by this change, if `object_type` is GEOCACHE. */
-    @SerialName("cache_code") val cacheCode: String? = null,
-    /** Log entry UUID affected, if `object_type` is LOG_ENTRY. */
-    @SerialName("log_uuid") val logUuid: String? = null,
     /** The type of object this change refers to. */
-    @SerialName("object_type") val objectTypeRaw: String? = null,
-    /** Finer-grained change category (e.g. "attr_changed"). */
-    @SerialName("change_type") val changeType: String? = null,
+    @SerialName("object_type") val objectTypeRaw: String = "",
+    /** Key identifying which specific object changed. */
+    @SerialName("object_key") val objectKey: ChangelogObjectKey = ChangelogObjectKey(),
+    /** "replace" = created/updated; "delete" = removed. */
+    @SerialName("change_type") val changeType: String = "",
 ) {
     val objectType: ChangelogObjectType get() = when (objectTypeRaw) {
         "geocache" -> ChangelogObjectType.GEOCACHE
         "log_entry" -> ChangelogObjectType.LOG_ENTRY
         else -> ChangelogObjectType.UNKNOWN
     }
+    /** Cache code for GEOCACHE entries. */
+    val cacheCode: String? get() = objectKey.code
+    /** Log UUID for LOG_ENTRY entries. */
+    val logUuid: String? get() = objectKey.uuid
 }
 
 /** A page of changelog entries returned by [ReplicateClient.changelog]. */
@@ -86,10 +97,10 @@ class ReplicateClient internal constructor(private val engine: HttpEngine) {
         return Changelog(revision = lastRevision, more = false, changelog = allEntries)
     }
 
-    /** Returns the current revision number of the OKAPI database without fetching any entries. */
+    /** Returns the current revision number of the OKAPI database. */
     suspend fun currentRevision(): Long {
-        val body = engine.get("replicate/changelog", mapOf("since" to "0", "limit" to "1"))
-        return json.decodeFromString<Changelog>(body).revision
+        val body = engine.get("replicate/info", emptyMap())
+        return json.decodeFromString<ReplicateInfoDto>(body).changelog.revision
     }
 
     /** Returns metadata about the replication system (supported revision range, etc.). */

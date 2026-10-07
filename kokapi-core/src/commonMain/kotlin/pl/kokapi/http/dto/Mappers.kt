@@ -66,7 +66,7 @@ internal fun GeocacheDto.toDomain() = Geocache(
     bearing = bearing,
     internalId = internalId,
     oxsize = oxsize,
-    protectionAreas = protectionAreas,
+    protectionAreas = protectionAreas?.map { ProtectionArea(type = it.type, name = it.name) },
 )
 
 internal fun CacheImageDto.toDomain() = CacheImage(
@@ -110,7 +110,7 @@ internal fun GeocacheLogDto.toDomain() = GeocacheLog(
     comment = comment,
     images = images?.map { it.toDomain() } ?: emptyList(),
     wasRecommended = wasRecommended,
-    needsMaintenance = needsMaintenance,
+    needsMaintenance = when (needsMaintenance) { "true" -> true; "false" -> false; else -> null },
     dateCreated = dateCreated,
     lastModified = lastModified,
     location = location,
@@ -166,6 +166,7 @@ internal fun ApiStatsDto.toDomain() = ApiStats(
 )
 
 internal fun ReplicateInfoDto.toDomain() = ReplicateInfo(
-    revision = revision,
-    fulldumpUrl = fulldumpUrl,
+    revision = changelog.revision,
+    minSince = changelog.minSince,
+    latestFulldumpRevision = latestFulldump?.revision,
 )

@@ -16,15 +16,18 @@ import pl.kokapi.model.Geocache
 /** Client for geocache search, retrieval, and cache management endpoints. */
 class CachesClient internal constructor(private val engine: HttpEngine) {
 
-    private val defaultFields =
-        "code|name|location|type|status|difficulty|terrain|owner|attributes|description|hint2|url|" +
+    private val publicFields =
+        "code|name|location|type|status|difficulty|terrain|owner|description|hint2|url|" +
         "founds|notfounds|date_created|last_found|gc_code|size2|recommendations|req_passwd|" +
         "short_description|images|trackables_count|trackables|alt_wpts|country2|region|rating|" +
-        "trip_time|trip_distance|date_hidden|last_modified|is_found|is_not_found|is_watched|" +
-        "is_ignored|willattends|watchers|rating_votes|my_rating|needs_maintenance|my_notes|" +
-        "latest_logs|names|descriptions|short_descriptions|hints2|is_recommended|attr_acodes|" +
-        "attr_names|oc_team_annotation|attribution_note|distance|bearing|internal_id|oxsize|" +
-        "protection_areas"
+        "trip_time|trip_distance|date_hidden|last_modified|willattends|watchers|rating_votes|" +
+        "needs_maintenance|latest_logs|names|descriptions|short_descriptions|hints2|attr_acodes|" +
+        "oc_team_annotation|attribution_note|internal_id|oxsize|protection_areas"
+
+    private val authFields = "is_found|is_not_found|is_watched|is_ignored|is_recommended|my_rating|my_notes"
+
+    private val defaultFields get() =
+        if (engine.isAuthenticated) "$publicFields|$authFields" else publicFields
 
     /** Fetches a single geocache by its OKAPI cache code (e.g. "OP1234"). */
     suspend fun get(
@@ -515,6 +518,7 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             "retr_params" to retrParamsJson,
             "search_method" to "services/caches/search/all",
             "search_params" to searchParamsJson,
+            "wrap" to "true",
         )
         val body = engine.get("caches/shortcuts/search_and_retrieve", params)
         val result = json.decodeFromString<SearchAndRetrieveResultDto>(body)

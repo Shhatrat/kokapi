@@ -81,5 +81,5 @@ data class Geocache(
     val bearing: String? = null,
     val internalId: Int? = null,
     val oxsize: Float? = null,
-    val protectionAreas: List<String>? = null,
+    val protectionAreas: List<ProtectionArea>? = null,
 )

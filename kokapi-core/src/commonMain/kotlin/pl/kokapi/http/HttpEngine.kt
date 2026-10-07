@@ -16,6 +16,8 @@ internal class HttpEngine(
     private val oauthManager: OAuthManager,
     private val httpClient: HttpClient,
 ) {
+    val isAuthenticated: Boolean get() = oauthManager.isAuthenticated
+
     suspend fun get(path: String, params: Map<String, String> = emptyMap()): String {
         val baseParams = params + ("consumer_key" to oauthManager.consumerKey)
         val urlForSigning = buildUrl(path, baseParams)

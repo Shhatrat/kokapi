@@ -2,6 +2,7 @@ package pl.kokapi.model
 
 import pl.kokapi.http.dto.GeocacheDto
 import pl.kokapi.http.dto.GeocacheLogDto
+import pl.kokapi.http.dto.ProtectionAreaDto
 import pl.kokapi.http.dto.UserDto
 import pl.kokapi.http.dto.UserRefDto
 import pl.kokapi.http.dto.toDomain
@@ -121,7 +122,7 @@ class MappersTest {
             bearing = "N",
             internalId = 999,
             oxsize = 2.0f,
-            protectionAreas = listOf("Kampinos National Park"),
+            protectionAreas = listOf(ProtectionAreaDto(type = "Natura 2000", name = "Kampinos National Park")),
         )
         val cache = dto.toDomain()
         assertEquals(mapOf("pl" to "Nazwa", "en" to "Name"), cache.names)
@@ -137,7 +138,8 @@ class MappersTest {
         assertEquals("N", cache.bearing)
         assertEquals(999, cache.internalId)
         assertEquals(2.0f, cache.oxsize)
-        assertEquals(listOf("Kampinos National Park"), cache.protectionAreas)
+        assertEquals(1, cache.protectionAreas?.size)
+        assertEquals("Kampinos National Park", cache.protectionAreas?.first()?.name)
     }
 
     @Test
