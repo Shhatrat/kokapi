@@ -1,5 +1,6 @@
 package pl.kokapi.model
 
+/** Metadata about an Opencaching site installation (returned by `apisrv/installation`). */
 data class Installation(
     val siteUrl: String,
     val okapiBaseUrl: String,
@@ -8,6 +9,7 @@ data class Installation(
     val registrationUrl: String?,
 )
 
+/** Site-wide statistics returned by `apisrv/stats`. */
 data class ApiStats(
     val cacheCount: Int,
 )

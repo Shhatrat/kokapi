@@ -248,6 +248,30 @@ class CachesClientTest {
     }
 
     @Test
+    fun searchFlowEmitsAllCaches() = runTest {
+        var callCount = 0
+        // searchFlow calls: search/nearest → geocaches → search/nearest (empty, stops)
+        val responses = listOf(
+            """{"results":["OP1","OP2"],"more":true}""",
+            """{"OP1":{"code":"OP1","name":"A","location":"52.0|21.0","type":"Traditional","status":"Available"},"OP2":{"code":"OP2","name":"B","location":"52.0|21.0","type":"Traditional","status":"Available"}}""",
+            """{"results":[],"more":false}""",
+        )
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine {
+                respond(responses[callCount++], HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
+        )
+        val collected = mutableListOf<pl.kokapi.model.Geocache>()
+        client.caches.searchFlow(52.0, 21.0, pageSize = 2).collect { collected.add(it) }
+        assertEquals(2, collected.size)
+        assertEquals("OP1", collected[0].code)
+        assertEquals("OP2", collected[1].code)
+    }
+
+    @Test
     fun searchAndRetrieveWithFullFilters() = runTest {
         val json = """{"results":{"OP1":{"code":"OP1","name":"T","location":"52.0|21.0","type":"Traditional","status":"Available"}}}"""
         val caches = clientWith(json).caches.searchAndRetrieve(

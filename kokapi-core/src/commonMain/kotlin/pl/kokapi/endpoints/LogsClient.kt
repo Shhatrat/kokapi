@@ -145,6 +145,7 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
         commentFormat: String = "plaintext",
         date: String? = null,
         recommend: Boolean? = null,
+        rating: Int? = null,
     ) {
         val params = buildMap {
             put("log_uuid", logUuid)
@@ -154,6 +155,7 @@ class LogsClient internal constructor(private val engine: HttpEngine) {
             }
             date?.let { put("when", it) }
             recommend?.let { put("recommend", it.toString()) }
+            rating?.let { put("rating", it.toString()) }
         }
         engine.post("logs/edit", params)
     }

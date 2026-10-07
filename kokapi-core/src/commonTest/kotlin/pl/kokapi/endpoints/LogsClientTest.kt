@@ -121,6 +121,11 @@ class LogsClientTest {
     }
 
     @Test
+    fun editWithRatingDoesNotThrow() = runTest {
+        clientWith("{}").logs.edit("log-1", rating = 4)
+    }
+
+    @Test
     fun deleteDoesNotThrow() = runTest {
         clientWith("{}").logs.delete("log-1")
     }
