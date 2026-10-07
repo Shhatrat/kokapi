@@ -38,8 +38,11 @@ class KokapiClient(
 
     private val engine = HttpEngine(site, oauthManager, httpClient)
 
-    /** Geocache search and retrieval. */
+    /** Geocache retrieval and management (get, mark, edit, personal notes). */
     val caches: CachesClient = CachesClient(engine)
+
+    /** Geocache discovery — search by location, bbox, filters, URL, and more. */
+    val search: CacheSearchClient = CacheSearchClient(engine, caches)
 
     /** Log entry access and submission. */
     val logs: LogsClient = LogsClient(engine)

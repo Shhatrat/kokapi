@@ -63,7 +63,7 @@ class OkapiIntegrationTest {
     fun searchNearest() = runTest {
         skipIfNoKey()
         // Center of Warsaw
-        val caches = client.caches.search(lat = 52.2297, lon = 21.0122, radiusKm = 5.0, filters = SearchFilters(limit = 5))
+        val caches = client.search.nearest(lat = 52.2297, lon = 21.0122, radiusKm = 5.0, filters = SearchFilters(limit = 5))
         assertTrue(caches.isNotEmpty(), "Expected caches near Warsaw")
         assertTrue(caches.size <= 5)
         caches.forEach { assertTrue(it.code.startsWith("OP")) }
@@ -72,7 +72,7 @@ class OkapiIntegrationTest {
     @Test
     fun searchBbox() = runTest {
         skipIfNoKey()
-        val caches = client.caches.bbox(
+        val caches = client.search.bbox(
             southLat = 52.1, westLon = 20.9,
             northLat = 52.3, eastLon = 21.1,
             filters = SearchFilters(limit = 5),
@@ -84,7 +84,7 @@ class OkapiIntegrationTest {
     @Test
     fun searchAll() = runTest {
         skipIfNoKey()
-        val caches = client.caches.searchAll(SearchFilters(type = listOf("Traditional"), limit = 3))
+        val caches = client.search.all(SearchFilters(type = listOf("Traditional"), limit = 3))
         assertTrue(caches.isNotEmpty())
         caches.forEach { assertEquals(CacheType.TRADITIONAL, it.type) }
     }
@@ -92,7 +92,7 @@ class OkapiIntegrationTest {
     @Test
     fun searchByUrls() = runTest {
         skipIfNoKey()
-        val caches = client.caches.searchByUrls(listOf("https://www.opencaching.pl/viewcache.php?wp=OP9D98"))
+        val caches = client.search.byUrls(listOf("https://www.opencaching.pl/viewcache.php?wp=OP9D98"))
         assertEquals(1, caches.size)
         assertEquals("OP9D98", caches[0].code)
     }
@@ -100,14 +100,14 @@ class OkapiIntegrationTest {
     @Test
     fun searchSaveReturnsSetId() = runTest {
         skipIfNoKey()
-        val setId = client.caches.searchSave(SearchFilters(type = listOf("Traditional"), limit = 5))
+        val setId = client.search.save(SearchFilters(type = listOf("Traditional"), limit = 5))
         assertTrue(setId.isNotBlank())
     }
 
     @Test
     fun searchAndRetrieve() = runTest {
         skipIfNoKey()
-        val caches = client.caches.searchAndRetrieve(SearchFilters(type = listOf("Traditional"), limit = 3))
+        val caches = client.search.andRetrieve(SearchFilters(type = listOf("Traditional"), limit = 3))
         assertTrue(caches.isNotEmpty())
         caches.forEach {
             assertEquals(CacheType.TRADITIONAL, it.type)

@@ -1,19 +1,14 @@
 package pl.kokapi.endpoints
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import pl.kokapi.error.KokapiException
 import pl.kokapi.http.HttpEngine
 import pl.kokapi.http.dto.GeocacheDto
-import pl.kokapi.http.dto.SearchResultDto
-import pl.kokapi.http.dto.SearchSaveResultDto
-import pl.kokapi.http.dto.SearchAndRetrieveResultDto
 import pl.kokapi.http.dto.SuccessDto
 import pl.kokapi.http.dto.toDomain
 import pl.kokapi.http.json
 import pl.kokapi.model.Geocache
 
-/** Client for geocache search, retrieval, and cache management endpoints. */
+/** Client for retrieving and managing specific geocaches. */
 class CachesClient internal constructor(private val engine: HttpEngine) {
 
     private val publicFields = listOf(
@@ -46,7 +41,7 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         "is_recommended", "my_rating", "my_notes",
     ).joinToString("|")
 
-    private val defaultFields get() =
+    internal val defaultFields get() =
         if (engine.isAuthenticated) "$publicFields|$authFields" else publicFields
 
     /** Fetches a single geocache by its OKAPI cache code (e.g. "OP1234"). */
@@ -114,71 +109,6 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
     }
 
     /**
-     * Nearest-caches search — finds caches within [radiusKm] of a given point.
-     *
-     * @param lat Latitude of the search center.
-     * @param lon Longitude of the search center.
-     * @param radiusKm Search radius in kilometers.
-     * @param filters Additional filter and pagination options.
-     */
-    suspend fun search(
-        lat: Double,
-        lon: Double,
-        radiusKm: Double = 10.0,
-        filters: SearchFilters = SearchFilters(),
-    ): List<Geocache> {
-        val params = buildMap {
-            putAll(filters.toParams())
-            put("center", "$lat|$lon")
-            put("radius", radiusKm.toString())
-        }
-        val body = engine.get("caches/search/nearest", params)
-        val codes = json.decodeFromString<SearchResultDto>(body).results
-        if (codes.isEmpty()) return emptyList()
-        return getMultiple(codes)
-    }
-
-    /**
-     * Bounding-box search — finds caches within a geographic rectangle.
-     *
-     * @param southLat Southern boundary latitude.
-     * @param westLon Western boundary longitude.
-     * @param northLat Northern boundary latitude.
-     * @param eastLon Eastern boundary longitude.
-     * @param filters Additional filter and pagination options.
-     */
-    suspend fun bbox(
-        southLat: Double,
-        westLon: Double,
-        northLat: Double,
-        eastLon: Double,
-        filters: SearchFilters = SearchFilters(),
-    ): List<Geocache> {
-        val params = buildMap {
-            putAll(filters.toParams())
-            put("bbox", "$southLat|$westLon|$northLat|$eastLon")
-        }
-        val body = engine.get("caches/search/bbox", params)
-        val codes = json.decodeFromString<SearchResultDto>(body).results
-        if (codes.isEmpty()) return emptyList()
-        return getMultiple(codes)
-    }
-
-    /**
-     * Full-featured search across the entire site.
-     *
-     * Unlike [search], not limited to a radius around a point.
-     *
-     * @param filters Filter and pagination options.
-     */
-    suspend fun searchAll(filters: SearchFilters = SearchFilters()): List<Geocache> {
-        val body = engine.get("caches/search/all", filters.toParams())
-        val codes = json.decodeFromString<SearchResultDto>(body).results
-        if (codes.isEmpty()) return emptyList()
-        return getMultiple(codes)
-    }
-
-    /**
      * Marks a cache as watched and/or ignored for the authenticated user.
      *
      * At least one of [watched] or [ignored] must be provided.
@@ -224,83 +154,5 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         val body = engine.post("caches/edit", params)
         val result = json.decodeFromString<SuccessDto>(body)
         if (!result.success) throw KokapiException.ApiError("edit_failed", "caches/edit returned success=false")
-    }
-
-    /**
-     * Finds caches by their full opencaching site URLs.
-     *
-     * Useful for resolving cache links shared by users.
-     */
-    suspend fun searchByUrls(urls: List<String>): List<Geocache> {
-        val params = mapOf("urls" to urls.joinToString("|"))
-        val body = engine.get("caches/search/by_urls", params)
-        val codes = json.decodeFromString<SearchResultDto>(body).results
-        if (codes.isEmpty()) return emptyList()
-        return getMultiple(codes)
-    }
-
-    /**
-     * Executes a search on the server and returns a persistent search set ID.
-     *
-     * The returned ID can be reused to page through large result sets without repeating the query.
-     *
-     * @return The server-assigned search set ID.
-     */
-    suspend fun searchSave(filters: SearchFilters = SearchFilters()): String {
-        val body = engine.get("caches/search/save", filters.toParams())
-        return json.decodeFromString<SearchSaveResultDto>(body).setId
-    }
-
-    /**
-     * Single-call shortcut that searches and retrieves full geocache data in one request.
-     *
-     * Combines `caches/search/all` + `caches/geocaches` into a single OKAPI call, reducing round-trips.
-     */
-    suspend fun searchAndRetrieve(filters: SearchFilters = SearchFilters()): List<Geocache> {
-        val searchParamsMap = filters.toParams()
-        val searchParamsJson = buildString {
-            append("{")
-            searchParamsMap.entries.forEachIndexed { i, (k, v) ->
-                if (i > 0) append(",")
-                append("\"$k\":\"$v\"")
-            }
-            append("}")
-        }
-        val retrParamsJson = """{"fields":"$defaultFields"}"""
-        val params = mapOf(
-            "retr_method" to "services/caches/geocaches",
-            "retr_params" to retrParamsJson,
-            "search_method" to "services/caches/search/all",
-            "search_params" to searchParamsJson,
-            "wrap" to "true",
-        )
-        val body = engine.get("caches/shortcuts/search_and_retrieve", params)
-        val result = json.decodeFromString<SearchAndRetrieveResultDto>(body)
-        return result.results.values.map { it.toDomain() }
-    }
-
-    /**
-     * Kotlin Flow that paginates through a nearest-caches search automatically.
-     *
-     * Emits each [Geocache] individually. Pagination stops when a page returns fewer
-     * items than [pageSize].
-     *
-     * @param pageSize Number of caches fetched per page.
-     * @param filters Additional filter options (limit and offset are managed internally).
-     */
-    fun searchFlow(
-        lat: Double,
-        lon: Double,
-        radiusKm: Double = 10.0,
-        pageSize: Int = 100,
-        filters: SearchFilters = SearchFilters(),
-    ): Flow<Geocache> = flow {
-        var offset = 0
-        while (true) {
-            val page = search(lat, lon, radiusKm, filters.copy(limit = pageSize, offset = offset))
-            page.forEach { emit(it) }
-            if (page.size < pageSize) break
-            offset += pageSize
-        }
     }
 }

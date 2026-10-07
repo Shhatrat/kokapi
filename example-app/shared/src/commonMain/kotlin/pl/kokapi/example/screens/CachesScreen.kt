@@ -177,7 +177,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                 Button(onClick = {
                     scope.launch {
                         loading = true; error = null
-                        runCatching { kokapi.caches.search(lat.toDouble(), lon.toDouble(), radius.toDouble()) }
+                        runCatching { kokapi.search.nearest(lat.toDouble(), lon.toDouble(), radius.toDouble()) }
                             .onSuccess { caches = it }
                             .onFailure { error = it.message ?: "Unknown error" }
                         loading = false
@@ -196,7 +196,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                 Button(onClick = {
                     scope.launch {
                         loading = true; error = null
-                        runCatching { kokapi.caches.bbox(southLat.toDouble(), westLon.toDouble(), northLat.toDouble(), eastLon.toDouble()) }
+                        runCatching { kokapi.search.bbox(southLat.toDouble(), westLon.toDouble(), northLat.toDouble(), eastLon.toDouble()) }
                             .onSuccess { caches = it }
                             .onFailure { error = it.message ?: "Unknown error" }
                         loading = false
@@ -224,7 +224,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null
                         runCatching {
-                            kokapi.caches.searchAll(SearchFilters(
+                            kokapi.search.all(SearchFilters(
                                 name = saName.takeIf { it.isNotBlank() },
                                 type = saType.takeIf { it.isNotBlank() }?.let { listOf(it) },
                                 difficulty = saDifficulty.takeIf { it.isNotBlank() },
@@ -283,7 +283,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                         onClick = {
                             scope.launch {
                                 loading = true; error = null
-                                runCatching { kokapi.caches.searchByUrls(listOf(byUrlInput.trim())) }
+                                runCatching { kokapi.search.byUrls(listOf(byUrlInput.trim())) }
                                     .onSuccess { caches = it }
                                     .onFailure { error = it.message ?: "Unknown error" }
                                 loading = false
@@ -332,7 +332,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null; ssSetId = null
                         runCatching {
-                            kokapi.caches.searchSave(SearchFilters(
+                            kokapi.search.save(SearchFilters(
                                 name = ssName.takeIf { it.isNotBlank() },
                                 type = ssType.takeIf { it.isNotBlank() }?.let { listOf(it) },
                                 limit = ssLimit.toIntOrNull() ?: 20,
@@ -361,7 +361,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null
                         runCatching {
-                            kokapi.caches.searchAndRetrieve(SearchFilters(
+                            kokapi.search.andRetrieve(SearchFilters(
                                 type = sarType.takeIf { it.isNotBlank() }?.let { listOf(it) },
                                 limit = sarLimit.toIntOrNull() ?: 20,
                             ))
@@ -386,7 +386,7 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null
                         runCatching {
-                            kokapi.caches.searchFlow(
+                            kokapi.search.flow(
                                 lat = flowLat.toDouble(),
                                 lon = flowLon.toDouble(),
                                 radiusKm = flowRadius.toDouble(),
