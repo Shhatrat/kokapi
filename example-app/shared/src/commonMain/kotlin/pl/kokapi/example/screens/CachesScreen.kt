@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.toList
 import pl.kokapi.KokapiClient
+import pl.kokapi.endpoints.SearchFilters
 import pl.kokapi.model.Geocache
 import pl.kokapi.model.GeocacheLog
 import pl.kokapi.model.LogCapabilities
@@ -223,14 +224,14 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null
                         runCatching {
-                            kokapi.caches.searchAll(
+                            kokapi.caches.searchAll(SearchFilters(
                                 name = saName.takeIf { it.isNotBlank() },
                                 type = saType.takeIf { it.isNotBlank() }?.let { listOf(it) },
                                 difficulty = saDifficulty.takeIf { it.isNotBlank() },
                                 limit = saLimit.toIntOrNull() ?: 20,
                                 recommendedOnly = saRecommendedOnly,
                                 ftfHunter = saFtfHunter,
-                            )
+                            ))
                         }
                             .onSuccess { caches = it }
                             .onFailure { error = it.message ?: "Unknown error" }
@@ -331,11 +332,11 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null; ssSetId = null
                         runCatching {
-                            kokapi.caches.searchSave(
+                            kokapi.caches.searchSave(SearchFilters(
                                 name = ssName.takeIf { it.isNotBlank() },
                                 type = ssType.takeIf { it.isNotBlank() }?.let { listOf(it) },
-                                limit = ssLimit.toIntOrNull() ?: 20
-                            )
+                                limit = ssLimit.toIntOrNull() ?: 20,
+                            ))
                         }
                             .onSuccess { ssSetId = it }
                             .onFailure { error = it.message ?: "Unknown error" }
@@ -360,10 +361,10 @@ private fun CachesSubScreen(kokapi: KokapiClient) {
                     scope.launch {
                         loading = true; error = null
                         runCatching {
-                            kokapi.caches.searchAndRetrieve(
+                            kokapi.caches.searchAndRetrieve(SearchFilters(
                                 type = sarType.takeIf { it.isNotBlank() }?.let { listOf(it) },
-                                limit = sarLimit.toIntOrNull() ?: 20
-                            )
+                                limit = sarLimit.toIntOrNull() ?: 20,
+                            ))
                         }
                             .onSuccess { caches = it }
                             .onFailure { error = it.message ?: "Unknown error" }

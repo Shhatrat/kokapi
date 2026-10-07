@@ -16,15 +16,35 @@ import pl.kokapi.model.Geocache
 /** Client for geocache search, retrieval, and cache management endpoints. */
 class CachesClient internal constructor(private val engine: HttpEngine) {
 
-    private val publicFields =
-        "code|name|location|type|status|difficulty|terrain|owner|description|hint2|url|" +
-        "founds|notfounds|date_created|last_found|gc_code|size2|recommendations|req_passwd|" +
-        "short_description|images|trackables_count|trackables|alt_wpts|country2|region|rating|" +
-        "trip_time|trip_distance|date_hidden|last_modified|willattends|watchers|rating_votes|" +
-        "needs_maintenance|latest_logs|names|descriptions|short_descriptions|hints2|attr_acodes|" +
-        "oc_team_annotation|attribution_note|internal_id|oxsize|protection_areas"
+    private val publicFields = listOf(
+        // identity & discovery
+        "code", "name", "location", "type", "status", "url", "gc_code",
+        // difficulty & metadata
+        "difficulty", "terrain", "owner",
+        "date_created", "date_hidden", "last_modified", "last_found",
+        // activity
+        "founds", "notfounds", "willattends", "watchers",
+        // ratings
+        "rating", "rating_votes", "recommendations",
+        // content
+        "description", "short_description", "hint2",
+        "names", "descriptions", "short_descriptions", "hints2",
+        // media & extras
+        "images", "trackables_count", "trackables", "alt_wpts",
+        // location details
+        "country2", "region",
+        // logistics
+        "size2", "req_passwd", "trip_time", "trip_distance", "oxsize", "internal_id",
+        // status & flags
+        "needs_maintenance",
+        // attributes & annotations
+        "attr_acodes", "latest_logs", "oc_team_annotation", "attribution_note", "protection_areas",
+    ).joinToString("|")
 
-    private val authFields = "is_found|is_not_found|is_watched|is_ignored|is_recommended|my_rating|my_notes"
+    private val authFields = listOf(
+        "is_found", "is_not_found", "is_watched", "is_ignored",
+        "is_recommended", "my_rating", "my_notes",
+    ).joinToString("|")
 
     private val defaultFields get() =
         if (engine.isAuthenticated) "$publicFields|$authFields" else publicFields
@@ -99,68 +119,18 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
      * @param lat Latitude of the search center.
      * @param lon Longitude of the search center.
      * @param radiusKm Search radius in kilometers.
-     * @param foundStatus Filter by found status, e.g. "found_only" or "notfound_only".
+     * @param filters Additional filter and pagination options.
      */
     suspend fun search(
         lat: Double,
         lon: Double,
         radiusKm: Double = 10.0,
-        limit: Int = 100,
-        offset: Int = 0,
-        type: String? = null,
-        status: String = "Available",
-        difficulty: String? = null,
-        terrain: String? = null,
-        size2: List<String>? = null,
-        ownerUuid: String? = null,
-        name: String? = null,
-        minRcmds: String? = null,
-        minFounds: Int? = null,
-        maxFounds: Int? = null,
-        modifiedSince: String? = null,
-        foundStatus: String? = null,
-        foundBy: String? = null,
-        notFoundBy: String? = null,
-        recommendedOnly: Boolean = false,
-        recommendedBy: String? = null,
-        watchedOnly: Boolean = false,
-        ignoredStatus: String? = null,
-        excludeMyOwn: Boolean = false,
-        withTrackablesOnly: Boolean = false,
-        ftfHunter: Boolean = false,
-        setAnd: String? = null,
-        rating: String? = null,
-        orderBy: String? = null,
+        filters: SearchFilters = SearchFilters(),
     ): List<Geocache> {
         val params = buildMap {
+            putAll(filters.toParams())
             put("center", "$lat|$lon")
             put("radius", radiusKm.toString())
-            put("limit", limit.toString())
-            put("offset", offset.toString())
-            put("status", status)
-            type?.let { put("type", it) }
-            difficulty?.let { put("difficulty", it) }
-            terrain?.let { put("terrain", it) }
-            size2?.let { put("size2", it.joinToString("|")) }
-            ownerUuid?.let { put("owner_uuid", it) }
-            name?.let { put("name", it) }
-            minRcmds?.let { put("min_rcmds", it) }
-            minFounds?.let { put("min_founds", it.toString()) }
-            maxFounds?.let { put("max_founds", it.toString()) }
-            modifiedSince?.let { put("modified_since", it) }
-            foundStatus?.let { put("found_status", it) }
-            foundBy?.let { put("found_by", it) }
-            notFoundBy?.let { put("not_found_by", it) }
-            if (recommendedOnly) put("recommended_only", "true")
-            recommendedBy?.let { put("recommended_by", it) }
-            if (watchedOnly) put("watched_only", "true")
-            ignoredStatus?.let { put("ignored_status", it) }
-            if (excludeMyOwn) put("exclude_my_own", "true")
-            if (withTrackablesOnly) put("with_trackables_only", "true")
-            if (ftfHunter) put("ftf_hunter", "true")
-            setAnd?.let { put("set_and", it) }
-            rating?.let { put("rating", it) }
-            orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/nearest", params)
         val codes = json.decodeFromString<SearchResultDto>(body).results
@@ -175,67 +145,18 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
      * @param westLon Western boundary longitude.
      * @param northLat Northern boundary latitude.
      * @param eastLon Eastern boundary longitude.
+     * @param filters Additional filter and pagination options.
      */
     suspend fun bbox(
         southLat: Double,
         westLon: Double,
         northLat: Double,
         eastLon: Double,
-        limit: Int = 100,
-        offset: Int = 0,
-        type: String? = null,
-        status: String = "Available",
-        difficulty: String? = null,
-        terrain: String? = null,
-        size2: List<String>? = null,
-        ownerUuid: String? = null,
-        name: String? = null,
-        minRcmds: String? = null,
-        minFounds: Int? = null,
-        maxFounds: Int? = null,
-        modifiedSince: String? = null,
-        foundStatus: String? = null,
-        foundBy: String? = null,
-        notFoundBy: String? = null,
-        recommendedOnly: Boolean = false,
-        recommendedBy: String? = null,
-        watchedOnly: Boolean = false,
-        ignoredStatus: String? = null,
-        excludeMyOwn: Boolean = false,
-        withTrackablesOnly: Boolean = false,
-        ftfHunter: Boolean = false,
-        setAnd: String? = null,
-        rating: String? = null,
-        orderBy: String? = null,
+        filters: SearchFilters = SearchFilters(),
     ): List<Geocache> {
         val params = buildMap {
+            putAll(filters.toParams())
             put("bbox", "$southLat|$westLon|$northLat|$eastLon")
-            put("limit", limit.toString())
-            put("offset", offset.toString())
-            put("status", status)
-            type?.let { put("type", it) }
-            difficulty?.let { put("difficulty", it) }
-            terrain?.let { put("terrain", it) }
-            size2?.let { put("size2", it.joinToString("|")) }
-            ownerUuid?.let { put("owner_uuid", it) }
-            name?.let { put("name", it) }
-            minRcmds?.let { put("min_rcmds", it) }
-            minFounds?.let { put("min_founds", it.toString()) }
-            maxFounds?.let { put("max_founds", it.toString()) }
-            modifiedSince?.let { put("modified_since", it) }
-            foundStatus?.let { put("found_status", it) }
-            foundBy?.let { put("found_by", it) }
-            notFoundBy?.let { put("not_found_by", it) }
-            if (recommendedOnly) put("recommended_only", "true")
-            recommendedBy?.let { put("recommended_by", it) }
-            if (watchedOnly) put("watched_only", "true")
-            ignoredStatus?.let { put("ignored_status", it) }
-            if (excludeMyOwn) put("exclude_my_own", "true")
-            if (withTrackablesOnly) put("with_trackables_only", "true")
-            if (ftfHunter) put("ftf_hunter", "true")
-            setAnd?.let { put("set_and", it) }
-            rating?.let { put("rating", it) }
-            orderBy?.let { put("order_by", it) }
         }
         val body = engine.get("caches/search/bbox", params)
         val codes = json.decodeFromString<SearchResultDto>(body).results
@@ -244,72 +165,14 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
     }
 
     /**
-     * Full-featured search with 25+ filter options across the entire site.
+     * Full-featured search across the entire site.
      *
-     * Unlike [search], this is not limited to a radius — it scans the whole site.
+     * Unlike [search], not limited to a radius around a point.
      *
-     * @param excludeMyOwn Exclude caches owned by the authenticated user.
-     * @param withTrackablesOnly Only return caches that currently have trackables.
-     * @param modifiedSince ISO-8601 timestamp; return only caches changed after this date.
-     * @param foundStatus Filter by found status, e.g. "found_only" or "notfound_only".
+     * @param filters Filter and pagination options.
      */
-    suspend fun searchAll(
-        type: List<String>? = null,
-        status: List<String> = listOf("Available"),
-        ownerUuid: List<String>? = null,
-        name: String? = null,
-        terrain: String? = null,
-        difficulty: String? = null,
-        size2: List<String>? = null,
-        minRcmds: String? = null,
-        minFounds: Int? = null,
-        maxFounds: Int? = null,
-        modifiedSince: String? = null,
-        foundStatus: String? = null,
-        foundBy: String? = null,
-        notFoundBy: String? = null,
-        recommendedOnly: Boolean = false,
-        recommendedBy: String? = null,
-        watchedOnly: Boolean = false,
-        ignoredStatus: String? = null,
-        excludeMyOwn: Boolean = false,
-        withTrackablesOnly: Boolean = false,
-        ftfHunter: Boolean = false,
-        setAnd: String? = null,
-        rating: String? = null,
-        orderBy: String? = null,
-        limit: Int = 100,
-        offset: Int = 0,
-    ): List<Geocache> {
-        val params = buildMap {
-            put("status", status.joinToString("|"))
-            put("limit", limit.toString())
-            put("offset", offset.toString())
-            if (excludeMyOwn) put("exclude_my_own", "true")
-            if (withTrackablesOnly) put("with_trackables_only", "true")
-            type?.let { put("type", it.joinToString("|")) }
-            ownerUuid?.let { put("owner_uuid", it.joinToString("|")) }
-            name?.let { put("name", it) }
-            terrain?.let { put("terrain", it) }
-            difficulty?.let { put("difficulty", it) }
-            size2?.let { put("size2", it.joinToString("|")) }
-            minRcmds?.let { put("min_rcmds", it) }
-            minFounds?.let { put("min_founds", it.toString()) }
-            maxFounds?.let { put("max_founds", it.toString()) }
-            modifiedSince?.let { put("modified_since", it) }
-            foundStatus?.let { put("found_status", it) }
-            foundBy?.let { put("found_by", it) }
-            notFoundBy?.let { put("not_found_by", it) }
-            if (recommendedOnly) put("recommended_only", "true")
-            recommendedBy?.let { put("recommended_by", it) }
-            if (watchedOnly) put("watched_only", "true")
-            ignoredStatus?.let { put("ignored_status", it) }
-            if (ftfHunter) put("ftf_hunter", "true")
-            setAnd?.let { put("set_and", it) }
-            rating?.let { put("rating", it) }
-            orderBy?.let { put("order_by", it) }
-        }
-        val body = engine.get("caches/search/all", params)
+    suspend fun searchAll(filters: SearchFilters = SearchFilters()): List<Geocache> {
+        val body = engine.get("caches/search/all", filters.toParams())
         val codes = json.decodeFromString<SearchResultDto>(body).results
         if (codes.isEmpty()) return emptyList()
         return getMultiple(codes)
@@ -383,63 +246,8 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
      *
      * @return The server-assigned search set ID.
      */
-    suspend fun searchSave(
-        type: List<String>? = null,
-        status: List<String> = listOf("Available"),
-        ownerUuid: List<String>? = null,
-        name: String? = null,
-        terrain: String? = null,
-        difficulty: String? = null,
-        size2: List<String>? = null,
-        minRcmds: String? = null,
-        minFounds: Int? = null,
-        maxFounds: Int? = null,
-        modifiedSince: String? = null,
-        foundStatus: String? = null,
-        foundBy: String? = null,
-        notFoundBy: String? = null,
-        recommendedOnly: Boolean = false,
-        recommendedBy: String? = null,
-        watchedOnly: Boolean = false,
-        ignoredStatus: String? = null,
-        excludeMyOwn: Boolean = false,
-        withTrackablesOnly: Boolean = false,
-        ftfHunter: Boolean = false,
-        setAnd: String? = null,
-        rating: String? = null,
-        orderBy: String? = null,
-        limit: Int = 100,
-        offset: Int = 0,
-    ): String {
-        val params = buildMap {
-            put("status", status.joinToString("|"))
-            put("limit", limit.toString())
-            put("offset", offset.toString())
-            if (excludeMyOwn) put("exclude_my_own", "true")
-            if (withTrackablesOnly) put("with_trackables_only", "true")
-            type?.let { put("type", it.joinToString("|")) }
-            ownerUuid?.let { put("owner_uuid", it.joinToString("|")) }
-            name?.let { put("name", it) }
-            terrain?.let { put("terrain", it) }
-            difficulty?.let { put("difficulty", it) }
-            size2?.let { put("size2", it.joinToString("|")) }
-            minRcmds?.let { put("min_rcmds", it) }
-            minFounds?.let { put("min_founds", it.toString()) }
-            maxFounds?.let { put("max_founds", it.toString()) }
-            modifiedSince?.let { put("modified_since", it) }
-            foundStatus?.let { put("found_status", it) }
-            foundBy?.let { put("found_by", it) }
-            notFoundBy?.let { put("not_found_by", it) }
-            if (recommendedOnly) put("recommended_only", "true")
-            recommendedBy?.let { put("recommended_by", it) }
-            if (watchedOnly) put("watched_only", "true")
-            ignoredStatus?.let { put("ignored_status", it) }
-            if (ftfHunter) put("ftf_hunter", "true")
-            setAnd?.let { put("set_and", it) }
-            rating?.let { put("rating", it) }
-            orderBy?.let { put("order_by", it) }
-        }
-        val body = engine.get("caches/search/save", params)
+    suspend fun searchSave(filters: SearchFilters = SearchFilters()): String {
+        val body = engine.get("caches/search/save", filters.toParams())
         return json.decodeFromString<SearchSaveResultDto>(body).setId
     }
 
@@ -448,62 +256,8 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
      *
      * Combines `caches/search/all` + `caches/geocaches` into a single OKAPI call, reducing round-trips.
      */
-    suspend fun searchAndRetrieve(
-        type: List<String>? = null,
-        status: List<String> = listOf("Available"),
-        terrain: String? = null,
-        difficulty: String? = null,
-        size2: List<String>? = null,
-        ownerUuid: List<String>? = null,
-        name: String? = null,
-        minRcmds: String? = null,
-        minFounds: Int? = null,
-        maxFounds: Int? = null,
-        modifiedSince: String? = null,
-        foundStatus: String? = null,
-        foundBy: String? = null,
-        notFoundBy: String? = null,
-        recommendedOnly: Boolean = false,
-        recommendedBy: String? = null,
-        watchedOnly: Boolean = false,
-        ignoredStatus: String? = null,
-        excludeMyOwn: Boolean = false,
-        withTrackablesOnly: Boolean = false,
-        ftfHunter: Boolean = false,
-        setAnd: String? = null,
-        rating: String? = null,
-        orderBy: String? = null,
-        limit: Int = 100,
-        offset: Int = 0,
-    ): List<Geocache> {
-        val searchParamsMap = buildMap {
-            put("status", status.joinToString("|"))
-            put("limit", limit.toString())
-            put("offset", offset.toString())
-            type?.let { put("type", it.joinToString("|")) }
-            terrain?.let { put("terrain", it) }
-            difficulty?.let { put("difficulty", it) }
-            size2?.let { put("size2", it.joinToString("|")) }
-            ownerUuid?.let { put("owner_uuid", it.joinToString("|")) }
-            name?.let { put("name", it) }
-            minRcmds?.let { put("min_rcmds", it) }
-            minFounds?.let { put("min_founds", it.toString()) }
-            maxFounds?.let { put("max_founds", it.toString()) }
-            modifiedSince?.let { put("modified_since", it) }
-            foundStatus?.let { put("found_status", it) }
-            foundBy?.let { put("found_by", it) }
-            notFoundBy?.let { put("not_found_by", it) }
-            if (recommendedOnly) put("recommended_only", "true")
-            recommendedBy?.let { put("recommended_by", it) }
-            if (watchedOnly) put("watched_only", "true")
-            ignoredStatus?.let { put("ignored_status", it) }
-            if (excludeMyOwn) put("exclude_my_own", "true")
-            if (withTrackablesOnly) put("with_trackables_only", "true")
-            if (ftfHunter) put("ftf_hunter", "true")
-            setAnd?.let { put("set_and", it) }
-            rating?.let { put("rating", it) }
-            orderBy?.let { put("order_by", it) }
-        }
+    suspend fun searchAndRetrieve(filters: SearchFilters = SearchFilters()): List<Geocache> {
+        val searchParamsMap = filters.toParams()
         val searchParamsJson = buildString {
             append("{")
             searchParamsMap.entries.forEachIndexed { i, (k, v) ->
@@ -532,16 +286,18 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
      * items than [pageSize].
      *
      * @param pageSize Number of caches fetched per page.
+     * @param filters Additional filter options (limit and offset are managed internally).
      */
     fun searchFlow(
         lat: Double,
         lon: Double,
         radiusKm: Double = 10.0,
         pageSize: Int = 100,
+        filters: SearchFilters = SearchFilters(),
     ): Flow<Geocache> = flow {
         var offset = 0
         while (true) {
-            val page = search(lat, lon, radiusKm, pageSize, offset)
+            val page = search(lat, lon, radiusKm, filters.copy(limit = pageSize, offset = offset))
             page.forEach { emit(it) }
             if (page.size < pageSize) break
             offset += pageSize

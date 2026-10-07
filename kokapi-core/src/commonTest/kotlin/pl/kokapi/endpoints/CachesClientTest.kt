@@ -167,9 +167,9 @@ class CachesClientTest {
     }
 
     @Test
-    fun searchSaveWithParamsReturnsSetId() = runTest {
+    fun searchSaveWithFiltersReturnsSetId() = runTest {
         val client = clientWith("""{"set_id":"xyz789"}""")
-        val setId = client.caches.searchSave(type = listOf("Traditional"), limit = 50)
+        val setId = client.caches.searchSave(SearchFilters(type = listOf("Traditional"), limit = 50))
         assertEquals("xyz789", setId)
     }
 
@@ -188,54 +188,62 @@ class CachesClientTest {
     }
 
     @Test
-    fun searchWithNewFiltersReturnsEmptyList() = runTest {
+    fun searchWithFiltersReturnsEmptyList() = runTest {
         val results = clientWith("""{"results":[],"more":false}""").caches.search(
             lat = 51.0, lon = 20.0,
-            ownerUuid = "uuid-owner",
-            foundBy = "uuid-found",
-            recommendedOnly = true,
-            excludeMyOwn = true,
-            watchedOnly = true,
-            ftfHunter = true,
-            rating = "3-5",
+            filters = SearchFilters(
+                ownerUuid = listOf("uuid-owner"),
+                foundBy = "uuid-found",
+                recommendedOnly = true,
+                excludeMyOwn = true,
+                watchedOnly = true,
+                ftfHunter = true,
+                rating = "3-5",
+            )
         )
         assertEquals(0, results.size)
     }
 
     @Test
-    fun bboxWithNewFiltersReturnsEmptyList() = runTest {
+    fun bboxWithFiltersReturnsEmptyList() = runTest {
         val results = clientWith("""{"results":[],"more":false}""").caches.bbox(
             southLat = 50.0, westLon = 19.0,
             northLat = 51.0, eastLon = 21.0,
-            foundBy = "uuid-found",
-            recommendedOnly = true,
-            notFoundBy = "uuid-notfound",
+            filters = SearchFilters(
+                foundBy = "uuid-found",
+                recommendedOnly = true,
+                notFoundBy = "uuid-notfound",
+            )
         )
         assertEquals(0, results.size)
     }
 
     @Test
-    fun searchAllWithNewFiltersReturnsEmptyList() = runTest {
+    fun searchAllWithFiltersReturnsEmptyList() = runTest {
         val results = clientWith("""{"results":[],"more":false}""").caches.searchAll(
-            foundBy = "uuid-found",
-            notFoundBy = "uuid-notfound",
-            recommendedOnly = true,
-            recommendedBy = "uuid-rcmd",
-            watchedOnly = true,
-            ignoredStatus = "unignored_only",
-            ftfHunter = true,
-            setAnd = "set123",
-            rating = "3-5",
+            SearchFilters(
+                foundBy = "uuid-found",
+                notFoundBy = "uuid-notfound",
+                recommendedOnly = true,
+                recommendedBy = "uuid-rcmd",
+                watchedOnly = true,
+                ignoredStatus = "unignored_only",
+                ftfHunter = true,
+                setAnd = "set123",
+                rating = "3-5",
+            )
         )
         assertEquals(0, results.size)
     }
 
     @Test
-    fun searchSaveWithNewFiltersReturnsSetId() = runTest {
+    fun searchSaveWithFiltersReturnsSetId2() = runTest {
         val setId = clientWith("""{"set_id":"xyz"}""").caches.searchSave(
-            foundBy = "uuid-found",
-            recommendedOnly = true,
-            ftfHunter = true,
+            SearchFilters(
+                foundBy = "uuid-found",
+                recommendedOnly = true,
+                ftfHunter = true,
+            )
         )
         assertEquals("xyz", setId)
     }
@@ -250,7 +258,6 @@ class CachesClientTest {
     @Test
     fun searchFlowEmitsAllCaches() = runTest {
         var callCount = 0
-        // searchFlow calls: search/nearest → geocaches → search/nearest (empty, stops)
         val responses = listOf(
             """{"results":["OP1","OP2"],"more":true}""",
             """{"OP1":{"code":"OP1","name":"A","location":"52.0|21.0","type":"Traditional","status":"Available"},"OP2":{"code":"OP2","name":"B","location":"52.0|21.0","type":"Traditional","status":"Available"}}""",
@@ -272,14 +279,16 @@ class CachesClientTest {
     }
 
     @Test
-    fun searchAndRetrieveWithFullFilters() = runTest {
+    fun searchAndRetrieveWithFilters() = runTest {
         val json = """{"results":{"OP1":{"code":"OP1","name":"T","location":"52.0|21.0","type":"Traditional","status":"Available"}}}"""
         val caches = clientWith(json).caches.searchAndRetrieve(
-            type = listOf("Traditional"),
-            recommendedOnly = true,
-            ownerUuid = listOf("some-uuid"),
-            minFounds = 10,
-            limit = 50,
+            SearchFilters(
+                type = listOf("Traditional"),
+                recommendedOnly = true,
+                ownerUuid = listOf("some-uuid"),
+                minFounds = 10,
+                limit = 50,
+            )
         )
         assertEquals(1, caches.size)
     }

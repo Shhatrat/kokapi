@@ -23,12 +23,12 @@ fun CachesClient.search(
     lat: Double,
     lon: Double,
     radiusKm: Double = 10.0,
-    limit: Int = 100,
+    filters: SearchFilters = SearchFilters(),
     scope: CoroutineScope,
     onSuccess: (List<Geocache>) -> Unit,
     onFailure: (KokapiException) -> Unit,
 ) = scope.launch {
-    runCatching { search(lat, lon, radiusKm, limit) }
+    runCatching { search(lat, lon, radiusKm, filters) }
         .onSuccess(onSuccess)
         .onFailure { onFailure(it as? KokapiException ?: KokapiException.Unknown(it)) }
 }

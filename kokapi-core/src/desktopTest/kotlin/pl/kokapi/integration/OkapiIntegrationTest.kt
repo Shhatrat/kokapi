@@ -5,6 +5,7 @@ import pl.kokapi.KokapiClient
 import pl.kokapi.KokapiSite
 import pl.kokapi.auth.InMemoryTokenStorage
 import pl.kokapi.endpoints.ChangelogObjectType
+import pl.kokapi.endpoints.SearchFilters
 import pl.kokapi.model.enum.CacheStatus
 import pl.kokapi.model.enum.CacheType
 import kotlin.test.*
@@ -30,7 +31,7 @@ class OkapiIntegrationTest {
     }
 
     private fun skipIfNoKey() {
-        assumeTrue(key.isNotBlank(), "OKAPI_CONSUMER_KEY not set — skipping integration test")
+        org.junit.Assume.assumeTrue("OKAPI_CONSUMER_KEY not set — skipping integration test", key.isNotBlank())
     }
 
     // ── caches ───────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ class OkapiIntegrationTest {
     fun searchNearest() = runTest {
         skipIfNoKey()
         // Center of Warsaw
-        val caches = client.caches.search(lat = 52.2297, lon = 21.0122, radiusKm = 5.0, limit = 5)
+        val caches = client.caches.search(lat = 52.2297, lon = 21.0122, radiusKm = 5.0, filters = SearchFilters(limit = 5))
         assertTrue(caches.isNotEmpty(), "Expected caches near Warsaw")
         assertTrue(caches.size <= 5)
         caches.forEach { assertTrue(it.code.startsWith("OP")) }
@@ -74,7 +75,7 @@ class OkapiIntegrationTest {
         val caches = client.caches.bbox(
             southLat = 52.1, westLon = 20.9,
             northLat = 52.3, eastLon = 21.1,
-            limit = 5,
+            filters = SearchFilters(limit = 5),
         )
         assertTrue(caches.isNotEmpty())
         caches.forEach { assertTrue(it.code.startsWith("OP")) }
@@ -83,10 +84,7 @@ class OkapiIntegrationTest {
     @Test
     fun searchAll() = runTest {
         skipIfNoKey()
-        val caches = client.caches.searchAll(
-            type = listOf("Traditional"),
-            limit = 3,
-        )
+        val caches = client.caches.searchAll(SearchFilters(type = listOf("Traditional"), limit = 3))
         assertTrue(caches.isNotEmpty())
         caches.forEach { assertEquals(CacheType.TRADITIONAL, it.type) }
     }
@@ -102,17 +100,14 @@ class OkapiIntegrationTest {
     @Test
     fun searchSaveReturnsSetId() = runTest {
         skipIfNoKey()
-        val setId = client.caches.searchSave(type = listOf("Traditional"), limit = 5)
+        val setId = client.caches.searchSave(SearchFilters(type = listOf("Traditional"), limit = 5))
         assertTrue(setId.isNotBlank())
     }
 
     @Test
     fun searchAndRetrieve() = runTest {
         skipIfNoKey()
-        val caches = client.caches.searchAndRetrieve(
-            type = listOf("Traditional"),
-            limit = 3,
-        )
+        val caches = client.caches.searchAndRetrieve(SearchFilters(type = listOf("Traditional"), limit = 3))
         assertTrue(caches.isNotEmpty())
         caches.forEach {
             assertEquals(CacheType.TRADITIONAL, it.type)
@@ -309,12 +304,5 @@ class OkapiIntegrationTest {
         skipIfNoKey()
         val gpx = client.formatters.gpx(listOf("OP9D98"))
         assertTrue(gpx.trimStart().startsWith("<?xml") || gpx.contains("<gpx"), "Expected GPX XML, got: ${gpx.take(100)}")
-    }
-}
-
-private fun assumeTrue(condition: Boolean, message: String) {
-    if (!condition) {
-        println("SKIP: $message")
-        return
     }
 }
