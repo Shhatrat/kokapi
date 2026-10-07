@@ -4,24 +4,38 @@ All notable changes to KoKAPI are documented here. Follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.2.0] — Quality pass
+
+### Added
+
+- `SearchFilters` data class — replaces 25 repeated parameters across `search`, `bbox`, `searchAll`, `searchSave`, `searchAndRetrieve`, and `searchFlow`.
+- `UsersClient.byUuids()` — batch user lookup by UUID list.
+- `UsersClient.byInternalId()` / `byInternalIds()` — lookup by site-internal numeric ID.
+- `UsersClient.me()` — returns the currently authenticated user's profile.
+- `FormattersClient.garmin()` / `ggz()` — Garmin and GGZ export formats.
+- `FormattersClient.mapTile()` — map tile image endpoint.
+- `AuthClientTest` — 13 unit tests covering the full OAuth flow.
+- 147 tests total: 119 unit (mock HTTP) + 28 integration (live opencaching.pl).
+
 ### Changed
-- **Breaking:** `CachesClient` search methods now take a `SearchFilters` object instead of individual filter parameters.
-  - `search(lat, lon, radiusKm, filters)` replaces `search(lat, lon, radiusKm, limit, offset, type, ...)`
-  - `bbox(s, w, n, e, filters)` replaces `bbox(s, w, n, e, limit, offset, type, ...)`
-  - `searchAll(filters)` replaces `searchAll(type, status, terrain, ...)`
-  - `searchSave(filters)` replaces `searchSave(type, status, terrain, ...)`
-  - `searchAndRetrieve(filters)` replaces `searchAndRetrieve(type, status, terrain, ...)`
-  - `searchFlow(lat, lon, radiusKm, pageSize, filters)` gains optional `filters` parameter
-- `defaultFields` in `CachesClient` is now constructed from an organised list of field names rather than a single pipe-concatenated string, making the field list easier to read and maintain.
+
+- **Breaking:** All `CachesClient` search methods now accept `SearchFilters` instead of individual filter parameters:
+  - `search(lat, lon, radiusKm, filters)`
+  - `bbox(southLat, westLon, northLat, eastLon, filters)`
+  - `searchAll(filters)`
+  - `searchSave(filters)`
+  - `searchAndRetrieve(filters)`
+  - `searchFlow(lat, lon, radiusKm, pageSize, filters)`
+- `CachesClient.defaultFields` is now built from a grouped list of field names (identity, ratings, content…) rather than a single opaque pipe-string.
 
 ### Fixed
-- Integration tests (`OkapiIntegrationTest`) now correctly skip (JUnit assumption) instead of failing when `OKAPI_CONSUMER_KEY` is not set.
+
+- `AuthClient.startLogin()` now throws `KokapiException.ApiError` (codes `oauth_token_missing` / `oauth_token_secret_missing`) instead of `IllegalStateException` — errors are now catchable as `KokapiException`.
+- Integration tests now correctly skip via `org.junit.Assume.assumeTrue` when `OKAPI_CONSUMER_KEY` is not set (previously they failed instead of skipping).
 
 ---
 
 ## [0.1.0] — Initial release milestone
-
-This covers all work from project inception through the first full-coverage pass.
 
 ### Added
 
@@ -30,6 +44,7 @@ This covers all work from project inception through the first full-coverage pass
 - Kotlin Multiplatform library targeting Android, JVM/Desktop, iOS (macOS builds), and wasmJs.
 - `KokapiClient` entry point with pluggable `TokenStorage` and optional `HttpClient`.
 - `KokapiSite` enum for all known Opencaching installations.
+- 100% coverage of all 47 OKAPI endpoints across 9 clients.
 
 ##### Endpoints
 
@@ -37,13 +52,13 @@ This covers all work from project inception through the first full-coverage pass
 |---|---|
 | `CachesClient` | `get`, `getMultiple`, `search`, `bbox`, `searchAll`, `searchByUrls`, `searchSave`, `searchAndRetrieve`, `searchFlow`, `mark`, `savePersonalNotes`, `edit` |
 | `LogsClient` | `get`, `getEntries`, `getForCache`, `getUserLogs`, `submit`, `delete`, `edit`, `capabilities`, `addImage`, `editImage`, `deleteImage` |
-| `UsersClient` | `byUsername`, `byUsernames`, `byUuid` |
+| `UsersClient` | `byUsername`, `byUsernames`, `byUuid`, `byUuids`, `byInternalId`, `byInternalIds`, `me` |
 | `AttrsClient` | `attributeIndex`, `attribute`, `attributes` |
 | `ReplicateClient` | `info`, `currentRevision`, `changelog`, `changelogAll`, `fullDump` |
 | `ApiSrvClient` | `installation`, `installations`, `stats` |
-| `ApiRefClient` | `methodIndex`, `method` |
-| `FormattersClient` | `gpx` |
-| `AuthClient` | OAuth PKCE flow — `startLogin`, `handleCallback`, `logout` |
+| `ApiRefClient` | `methodIndex`, `method`, `reportIssue` |
+| `FormattersClient` | `gpx`, `garmin`, `ggz`, `mapTile` |
+| `AuthClient` | `startLogin`, `completeLogin`, `logout`, `isAuthenticated` |
 
 ##### Models
 
@@ -73,5 +88,5 @@ This covers all work from project inception through the first full-coverage pass
 
 #### Tests
 
-- 100+ unit tests with mock HTTP engine (commonTest).
-- Live integration test suite (`desktopTest`) — 30 tests against real opencaching.pl OKAPI, skipped when `OKAPI_CONSUMER_KEY` is not set.
+- 119 unit tests with mock HTTP engine (commonTest).
+- 28 live integration tests (`desktopTest`) against real opencaching.pl OKAPI, skipped when `OKAPI_CONSUMER_KEY` is not set.
