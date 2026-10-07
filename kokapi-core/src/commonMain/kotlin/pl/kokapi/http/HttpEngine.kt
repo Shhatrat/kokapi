@@ -18,68 +18,25 @@ internal class HttpEngine(
 ) {
     val isAuthenticated: Boolean get() = oauthManager.isAuthenticated
 
-    suspend fun get(path: String, params: Map<String, String> = emptyMap()): String {
-        val baseParams = params + ("consumer_key" to oauthManager.consumerKey)
-        val urlForSigning = buildUrl(path, baseParams)
+    suspend fun get(path: String, params: Map<String, String> = emptyMap()): String =
+        executeGet(path, params) { handleResponse(it) }
 
-        val oauthQueryParams = if (!useAuthorizationHeader && oauthManager.isAuthenticated) {
-            oauthManager.buildOAuthParams("GET", urlForSigning, params)
-        } else emptyMap()
-
-        val url = buildUrl(path, baseParams + oauthQueryParams)
-
-        return try {
-            val response = httpClient.get(url) {
-                if (useAuthorizationHeader && oauthManager.isAuthenticated) {
-                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", urlForSigning, params))
-                }
-            }
-            handleResponse(response)
-        } catch (e: KokapiException) {
-            throw e
-        } catch (e: Exception) {
-            throw KokapiException.NetworkError
-        }
-    }
-
-    suspend fun getBytes(path: String, params: Map<String, String> = emptyMap()): ByteArray {
-        val baseParams = params + ("consumer_key" to oauthManager.consumerKey)
-        val urlForSigning = buildUrl(path, baseParams)
-
-        val oauthQueryParams = if (!useAuthorizationHeader && oauthManager.isAuthenticated) {
-            oauthManager.buildOAuthParams("GET", urlForSigning, params)
-        } else emptyMap()
-
-        val url = buildUrl(path, baseParams + oauthQueryParams)
-
-        return try {
-            val response = httpClient.get(url) {
-                if (useAuthorizationHeader && oauthManager.isAuthenticated) {
-                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", urlForSigning, params))
-                }
-            }
-            handleResponseBytes(response)
-        } catch (e: KokapiException) {
-            throw e
-        } catch (e: Exception) {
-            throw KokapiException.NetworkError
-        }
-    }
+    suspend fun getBytes(path: String, params: Map<String, String> = emptyMap()): ByteArray =
+        executeGet(path, params) { handleResponseBytes(it) }
 
     suspend fun post(path: String, params: Map<String, String> = emptyMap(), forceConsumerAuth: Boolean = false): String {
         val url = "${site.baseUrl}/$path"
         val needsOAuth = oauthManager.isAuthenticated || forceConsumerAuth
         val effectiveCredentials = when {
             oauthManager.isAuthenticated && !forceConsumerAuth -> oauthManager.accessCredentials()
-            else -> null  // consumer-only or not authenticated
+            else -> null
         }
 
         val oauthBodyParams = if (!useAuthorizationHeader && needsOAuth) {
             oauthManager.buildOAuthParams("POST", url, params, effectiveCredentials)
         } else emptyMap()
 
-        val allBodyParams = params + oauthBodyParams
-        val bodyString = allBodyParams.entries.joinToString("&") { "${it.key}=${it.value}" }
+        val bodyString = (params + oauthBodyParams).entries.joinToString("&") { "${it.key}=${it.value}" }
 
         return try {
             val response = httpClient.post(url) {
@@ -97,6 +54,34 @@ internal class HttpEngine(
         }
     }
 
+    private suspend fun <T> executeGet(
+        path: String,
+        params: Map<String, String>,
+        handle: suspend (HttpResponse) -> T,
+    ): T {
+        val baseParams = params + ("consumer_key" to oauthManager.consumerKey)
+        val urlForSigning = buildUrl(path, baseParams)
+
+        val oauthQueryParams = if (!useAuthorizationHeader && oauthManager.isAuthenticated) {
+            oauthManager.buildOAuthParams("GET", urlForSigning, params)
+        } else emptyMap()
+
+        val url = buildUrl(path, baseParams + oauthQueryParams)
+
+        return try {
+            val response = httpClient.get(url) {
+                if (useAuthorizationHeader && oauthManager.isAuthenticated) {
+                    header(HttpHeaders.Authorization, oauthManager.buildAuthHeader("GET", urlForSigning, params))
+                }
+            }
+            handle(response)
+        } catch (e: KokapiException) {
+            throw e
+        } catch (e: Exception) {
+            throw KokapiException.NetworkError
+        }
+    }
+
     private fun buildUrl(path: String, params: Map<String, String>): String {
         val builder = URLBuilder("${site.baseUrl}/$path")
         params.forEach { (key, value) -> builder.parameters.append(key, value) }
@@ -107,12 +92,8 @@ internal class HttpEngine(
         val body = response.bodyAsText()
         return when {
             response.status.isSuccess() -> body
-            response.status == HttpStatusCode.Unauthorized ->
-                throw KokapiException.NotAuthenticated
-            response.status.value in 400..499 -> {
-                val errorCode = extractErrorCode(body)
-                throw KokapiException.ApiError(errorCode, body)
-            }
+            response.status == HttpStatusCode.Unauthorized -> throw KokapiException.NotAuthenticated
+            response.status.value in 400..499 -> throw KokapiException.ApiError(extractErrorCode(body), body)
             else -> throw KokapiException.HttpError(response.status.value, response.status.description)
         }
     }
@@ -120,22 +101,18 @@ internal class HttpEngine(
     private suspend fun handleResponseBytes(response: HttpResponse): ByteArray {
         return when {
             response.status.isSuccess() -> response.readRawBytes()
-            response.status == HttpStatusCode.Unauthorized ->
-                throw KokapiException.NotAuthenticated
+            response.status == HttpStatusCode.Unauthorized -> throw KokapiException.NotAuthenticated
             response.status.value in 400..499 -> {
                 val body = response.bodyAsText()
-                val errorCode = extractErrorCode(body)
-                throw KokapiException.ApiError(errorCode, body)
+                throw KokapiException.ApiError(extractErrorCode(body), body)
             }
             else -> throw KokapiException.HttpError(response.status.value, response.status.description)
         }
     }
 
     private fun extractErrorCode(body: String): String {
-        // OKAPI format: {"error":{"reason_stack":["bad_request"],"developer_message":"..."}}
         val reasonStack = Regex(""""reason_stack"\s*:\s*\[\s*"([^"]+)"""").find(body)?.groupValues?.get(1)
         if (reasonStack != null) return reasonStack
-        // fallback: {"error":"string"}
         return Regex(""""error"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.get(1) ?: "unknown_error"
     }
 }
