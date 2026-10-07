@@ -10,8 +10,8 @@ import pl.kokapi.example.App
 fun main() {
     val kokapi = KokapiClient(
         site = KokapiSite.OPENCACHING_PL,
-        consumerKey = "OKAPI_KEY_REMOVED",
-        consumerSecret = "OKAPI_SECRET_REMOVED",
+        consumerKey = js("window.__OKAPI_CONSUMER_KEY || ''") as String,
+        consumerSecret = js("window.__OKAPI_CONSUMER_SECRET || ''") as String,
         callbackUrl = "oob",
     )
     CanvasBasedWindow(canvasElementId = "ComposeTarget") {
