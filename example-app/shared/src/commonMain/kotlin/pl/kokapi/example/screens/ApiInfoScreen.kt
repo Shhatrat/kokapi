@@ -237,9 +237,25 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
                     InfoRow("More pages", cl.more.toString())
                     InfoRow("Entries", cl.changelog.size.toString())
                     cl.changelog.take(5).forEach { entry ->
-                        Text("• ${entry.action} ${entry.cacheCode ?: ""} ${entry.changeType ?: ""}", style = MaterialTheme.typography.bodySmall)
+                        Text("• ${entry.action} ${entry.objectType.name.lowercase()} ${entry.cacheCode ?: entry.logUuid ?: ""} ${entry.changeType ?: ""}", style = MaterialTheme.typography.bodySmall)
                     }
                     if (cl.changelog.size > 5) Text("… and ${cl.changelog.size - 5} more", style = MaterialTheme.typography.bodySmall)
+                }
+
+                Spacer(Modifier.height(4.dp))
+                currentRevision?.let { rev ->
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                changelogLoading = true; changelogError = null; changelog = null
+                                runCatching { kokapi.replicate.changelogAll(rev - 10) }
+                                    .onSuccess { changelog = it }
+                                    .onFailure { changelogError = it.message ?: "Error" }
+                                changelogLoading = false
+                            }
+                        },
+                        enabled = !changelogLoading
+                    ) { Text("Fetch all pages (changelogAll)") }
                 }
             }
         }
