@@ -1,6 +1,7 @@
 package pl.kokapi.endpoints
 
 import pl.kokapi.auth.OAuthManager
+import pl.kokapi.error.KokapiException
 import pl.kokapi.http.HttpEngine
 
 /**
@@ -46,8 +47,10 @@ class AuthClient internal constructor(
             val idx = it.indexOf('=')
             if (idx < 0) null else it.substring(0, idx) to it.substring(idx + 1)
         }.toMap()
-        val token = params["oauth_token"] ?: error("No oauth_token in response: $response")
-        val secret = params["oauth_token_secret"] ?: error("No oauth_token_secret in response")
+        val token = params["oauth_token"]
+            ?: throw KokapiException.ApiError("oauth_token_missing", "No oauth_token in response: $response")
+        val secret = params["oauth_token_secret"]
+            ?: throw KokapiException.ApiError("oauth_token_secret_missing", "No oauth_token_secret in response")
         oauthManager.storeRequestToken(token, secret)
         return OAuthLoginStep(
             authorizeUrl = oauthManager.getAuthorizeUrl(token),
