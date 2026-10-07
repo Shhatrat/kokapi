@@ -4,6 +4,23 @@ All notable changes to KoKAPI are documented here. Follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.3.0] — Architecture pass
+
+### Changed
+
+- **Breaking:** Search/discovery methods extracted from `CachesClient` into a new `CacheSearchClient`, exposed as `KokapiClient.search`:
+  - `client.search.nearest(lat, lon, radiusKm, filters)`
+  - `client.search.bbox(southLat, westLon, northLat, eastLon, filters)`
+  - `client.search.all(filters)`
+  - `client.search.byUrls(urls)`
+  - `client.search.save(filters)`
+  - `client.search.andRetrieve(filters)`
+  - `client.search.flow(lat, lon, radiusKm, pageSize, filters)`
+- `CachesClient` now only handles fetch/manage operations: `get`, `getMultiple`, `mark`, `savePersonalNotes`, `edit`.
+- 143 tests total (16 new `CacheSearchClientTest` unit tests).
+
+---
+
 ## [0.2.0] — Quality pass
 
 ### Added
