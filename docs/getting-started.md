@@ -40,16 +40,16 @@ let kokapi = KokapiClient(
 
 ```kotlin
 // By location + radius
-val caches = kokapi.caches.search(lat = 50.0619, lon = 19.9368, radiusKm = 10.0)
+val caches = kokapi.search.nearest(lat = 50.0619, lon = 19.9368, radiusKm = 10.0)
 
 // By bounding box
-val caches = kokapi.caches.bbox(
+val caches = kokapi.search.bbox(
     southLat = 49.9, westLon = 19.8,
     northLat = 50.2, eastLon = 20.1
 )
 
 // Paginated flow (all results)
-kokapi.caches.searchFlow(lat = 50.0619, lon = 19.9368).collect { cache ->
+kokapi.search.flow(lat = 50.0619, lon = 19.9368).collect { cache ->
     println("${cache.code}: ${cache.name}")
 }
 ```

@@ -13,11 +13,11 @@ val kokapi = KokapiClient(
 )
 
 // Search caches near Krakow
-val caches = kokapi.caches.search(lat = 50.0619, lon = 19.9368, radiusKm = 5.0)
+val caches = kokapi.search.nearest(lat = 50.0619, lon = 19.9368, radiusKm = 5.0)
 caches.forEach { println("${it.code}: ${it.name}") }
 
 // Bounding-box search
-val mapCaches = kokapi.caches.bbox(
+val mapCaches = kokapi.search.bbox(
     southLat = 50.0, westLon = 19.8,
     northLat = 50.1, eastLon = 20.0,
 )
@@ -26,7 +26,7 @@ val mapCaches = kokapi.caches.bbox(
 val cache = kokapi.caches.get("OP1234")
 
 // Stream all caches in an area (auto-paginated)
-kokapi.caches.searchFlow(lat = 50.0619, lon = 19.9368).collect { c ->
+kokapi.search.flow(lat = 50.0619, lon = 19.9368).collect { c ->
     println(c.name)
 }
 
@@ -71,16 +71,21 @@ kokapi.caches.mark("OP1234", watched = true)
 |--------|--------|:---:|-------------|
 | `kokapi.caches` | `get` | | Fetch a single geocache by code |
 | `kokapi.caches` | `getMultiple` | | Fetch multiple geocaches by code list |
-| `kokapi.caches` | `search` | | Nearest-caches search around a lat/lon point |
-| `kokapi.caches` | `bbox` | | Bounding-box search within a geographic rectangle |
-| `kokapi.caches` | `searchAll` | | Full-featured search with 25+ filters (site-wide) |
-| `kokapi.caches` | `searchAndRetrieve` | | Combined search + full data fetch in one request |
-| `kokapi.caches` | `searchSave` | | Save a search on the server and return its set ID |
-| `kokapi.caches` | `searchByUrls` | | Find caches by their opencaching.pl URLs |
-| `kokapi.caches` | `searchFlow` | | Auto-paginating Kotlin Flow for nearest search |
 | `kokapi.caches` | `mark` | ✓ | Mark a cache as watched or ignored |
 | `kokapi.caches` | `savePersonalNotes` | ✓ | Save private notes on a cache |
 | `kokapi.caches` | `edit` | ✓ | Trigger cache-edit flow (owner/admin only) |
+
+### Search
+
+| Client | Method | Auth required | Description |
+|--------|--------|:---:|-------------|
+| `kokapi.search` | `nearest` | | Nearest-caches search around a lat/lon point |
+| `kokapi.search` | `bbox` | | Bounding-box search within a geographic rectangle |
+| `kokapi.search` | `all` | | Full-featured search with 25+ filters (site-wide) |
+| `kokapi.search` | `andRetrieve` | | Combined search + full data fetch in one request |
+| `kokapi.search` | `save` | | Save a search on the server and return its set ID |
+| `kokapi.search` | `byUrls` | | Find caches by their opencaching.pl URLs |
+| `kokapi.search` | `flow` | | Auto-paginating Kotlin Flow for nearest search |
 
 ### Logs
 
