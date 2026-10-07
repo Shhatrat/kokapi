@@ -241,6 +241,26 @@ class CachesClientTest {
     }
 
     @Test
+    fun getWithOptionalParams() = runTest {
+        val cache = clientWith("""{"code":"OP1","name":"T","location":"52.0|21.0","type":"Traditional","status":"Available"}""")
+            .caches.get("OP1", langpref = "pl", lpc = 5, userLogsOnly = true)
+        assertEquals("OP1", cache.code)
+    }
+
+    @Test
+    fun searchAndRetrieveWithFullFilters() = runTest {
+        val json = """{"results":{"OP1":{"code":"OP1","name":"T","location":"52.0|21.0","type":"Traditional","status":"Available"}}}"""
+        val caches = clientWith(json).caches.searchAndRetrieve(
+            type = listOf("Traditional"),
+            recommendedOnly = true,
+            ownerUuid = listOf("some-uuid"),
+            minFounds = 10,
+            limit = 50,
+        )
+        assertEquals(1, caches.size)
+    }
+
+    @Test
     fun getCachePopulatesExtendedFields() = runTest {
         val json = """
             {

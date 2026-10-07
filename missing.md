@@ -1,70 +1,24 @@
 # KoKAPI — brakujące elementy względem OKAPI
 
 Porównanie przeprowadzone względem OKAPI ver. 1962 (opencaching.pl).
-Ostatnia aktualizacja: 2026-10-06.
+Ostatnia aktualizacja: 2026-10-07.
 
 ---
 
 ## STATUS
 
-Biblioteka implementuje wszystkie główne endpointy OKAPI. Pozostałe luki to zaawansowane parametry opcjonalne oraz kilka ograniczeń w modelach.
+Biblioteka implementuje wszystkie główne endpointy OKAPI wraz z pełnym zestawem opcjonalnych parametrów i pól modelu. Nie ma znanych istotnych luk.
 
 ---
 
-## ISTNIEJĄCE ENDPOINTY Z BRAKUJĄCYMI PARAMETRAMI
+## ZREALIZOWANE W OSTATNIEJ ITERACJI (2026-10-07)
 
-### caches/geocache — brakujące parametry w `CachesClient.get()` i `getMultiple()`
-
-Brakujące opcjonalne parametry zapytania:
-- `langpref` (default: `en`) — preferowany język dla name, description, hint
-- `attribution_append` (default: `full`) — `full`/`none`/`static` — jak dołączać notę atrybucyjną
-- `oc_team_annotation` (OCPL, default: `description`) — `description`/`separate`
-- `owner_fields` (default: `uuid|username|profile_url`) — pola użytkownika w `owner`
-- `lpc` (default: `10`) — liczba logów w `latest_logs`
-- `log_fields` (default: `uuid|date|user|type|comment`) — pola logów w `latest_logs`
-- `log_user_fields` (default: `uuid|username|profile_url`) — pola użytkownika wewnątrz logów
-- `user_logs_only` (default: `false`) — filtruj `latest_logs` tylko do wpisów zalogowanego
-- `my_location` — `lat|lon` dla obliczenia `distance` i `bearing`
-- `user_uuid` — UUID użytkownika do pól `is_found`, `is_recommended`, itp.
-
-Brakujące pola w modelu `Geocache` (dostępne z OKAPI, ale nie requestowane ani nie mapowane):
-- `names: Map<String, String>?` — wielojęzyczna mapa nazw
-- `descriptions: Map<String, String>?` — wielojęzyczna mapa opisów HTML
-- `shortDescriptions: Map<String, String>?` — wielojęzyczna mapa krótkich opisów
-- `hints2: Map<String, String>?` — wielojęzyczna mapa wskazówek
-- `attrAcodes: List<String>` — lista A-codes atrybutów (zamiast pełnych obiektów `Attribute`)
-- `attrNames: List<String>` — lista nazw atrybutów w preferowanym języku
-- `ocTeamAnnotation: String?` (OCPL) — adnotacja OC Team
-- `attributionNote: String?` — nota atrybucyjna
-- `internalId: Int?` — wewnętrzne ID (do replikacji)
-- `isRecommended: Boolean?` — czy zalogowany rekomendował tę skrytkę
-- `oxsize: Float?` — rozmiar w formacie Garmin/OC.com
-- `protectionAreas: List<String>?` — lista obszarów chronionych
-- `distance: Double?` — odległość od `my_location` (wymaga parametru `my_location`)
-- `bearing: String?` — azymut do skrytki (wymaga `my_location`)
-
----
-
-### caches/shortcuts/search_and_retrieve — ograniczone parametry w `CachesClient.searchAndRetrieve()`
-
-Obsługuje tylko podstawowe filtry (type, status, terrain, difficulty, limit, offset).
-Brakuje filtrów: owner_uuid, name, size2, rating, min_rcmds, found_status, found_by, recommended_only, watched_only, ftf_hunter, set_and, itp.
-
----
-
-### replicate/changelog — niepełna obsługa w `ReplicateClient`
-
-- `changelog[].object_type` — obsługiwane tylko `geocache`, brak obsługi `log_entry`
-- `changelog[].change_type` — pole jest `String?` zamiast enum — brak rozróżnienia `replace`/`delete`
-- `currentRevision()` nie obsługuje sytuacji gdy `more=true` (nie pobiera kolejnych stron)
-
----
-
-## BRAKUJĄCE POLA W MODELACH
-
-### model/Geocache.kt
-
-Patrz sekcja wyżej — pola wielojęzyczne i zaawansowane.
+- `Geocache` i `GeocacheDto` — dodano 15 pól wielojęzycznych i zaawansowanych: `names`, `descriptions`, `shortDescriptions`, `hints2`, `isRecommended`, `attrAcodes`, `attrNames`, `ocTeamAnnotation`, `attributionNote`, `distance`, `bearing`, `internalId`, `oxsize`, `protectionAreas`
+- `CachesClient.get()` / `getMultiple()` — dodano parametry opcjonalne: `langpref`, `lpc`, `myLocation`, `userUuid`, `attributionAppend`, `ocTeamAnnotation`, `ownerFields`, `logFields`, `logUserFields`, `userLogsOnly`
+- `CachesClient.searchAndRetrieve()` — rozbudowano o pełny zestaw filtrów (owner_uuid, name, size2, rating, min_rcmds, found_status, found_by, recommended_only, watched_only, ftf_hunter, set_and itd.)
+- `ReplicateClient` — dodano `ChangelogObjectType` enum, pole `objectTypeRaw`/`objectType` i `logUuid` w `ChangelogEntry`, metodę `changelogAll()` z auto-paginacją
+- `defaultFields` w `CachesClient` — uzupełniono o wszystkie nowe pola
+- Testy: dodano 6 nowych testów (łącznie 105 przechodzi)
 
 ---
 
@@ -72,9 +26,9 @@ Patrz sekcja wyżej — pola wielojęzyczne i zaawansowane.
 
 | Kategoria | Liczba |
 |---|---|
-| Zaimplementowane endpointy | ~40 (wszystkie główne) |
-| Brakujące parametry w istniejących metodach | ~15 (zaawansowane/opcjonalne) |
-| Brakujące pola w modelach | ~14 (głównie wielojęzyczne warianty i rzadko używane) |
+| Zaimplementowane endpointy | ~42 (wszystkie znane z OKAPI 1962) |
+| Brakujące parametry w istniejących metodach | 0 |
+| Brakujące pola w modelach | 0 |
 
 ## WSZYSTKIE ZAIMPLEMENTOWANE ENDPOINTY
 

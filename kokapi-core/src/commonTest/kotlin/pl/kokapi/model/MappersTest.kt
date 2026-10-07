@@ -10,6 +10,7 @@ import pl.kokapi.model.`enum`.CacheStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class MappersTest {
 
@@ -97,6 +98,46 @@ class MappersTest {
         val log = dto.toDomain()
         assertEquals("50.1|20.2", log.location)
         assertEquals(true, log.ocTeamEntry)
+    }
+
+    @Test
+    fun geocacheDtoMapsMultilingualFields() {
+        val dto = GeocacheDto(
+            code = "OP1",
+            name = "Test",
+            location = "52.0|21.0",
+            type = "Traditional",
+            status = "Available",
+            names = mapOf("pl" to "Nazwa", "en" to "Name"),
+            descriptions = mapOf("pl" to "<p>Opis</p>", "en" to "<p>Description</p>"),
+            shortDescriptions = mapOf("en" to "Short"),
+            hints2 = mapOf("en" to "look up"),
+            isRecommended = true,
+            attrAcodes = listOf("A1", "A6"),
+            attrNames = listOf("Dogs allowed", "Available 24/7"),
+            ocTeamAnnotation = "Some note",
+            attributionNote = "Source: OC.PL",
+            distance = 1234.5,
+            bearing = "N",
+            internalId = 999,
+            oxsize = 2.0f,
+            protectionAreas = listOf("Kampinos National Park"),
+        )
+        val cache = dto.toDomain()
+        assertEquals(mapOf("pl" to "Nazwa", "en" to "Name"), cache.names)
+        assertEquals(mapOf("pl" to "<p>Opis</p>", "en" to "<p>Description</p>"), cache.descriptions)
+        assertEquals(mapOf("en" to "Short"), cache.shortDescriptions)
+        assertEquals(mapOf("en" to "look up"), cache.hints2)
+        assertTrue(cache.isRecommended == true)
+        assertEquals(listOf("A1", "A6"), cache.attrAcodes)
+        assertEquals(listOf("Dogs allowed", "Available 24/7"), cache.attrNames)
+        assertEquals("Some note", cache.ocTeamAnnotation)
+        assertEquals("Source: OC.PL", cache.attributionNote)
+        assertEquals(1234.5, cache.distance)
+        assertEquals("N", cache.bearing)
+        assertEquals(999, cache.internalId)
+        assertEquals(2.0f, cache.oxsize)
+        assertEquals(listOf("Kampinos National Park"), cache.protectionAreas)
     }
 
     @Test

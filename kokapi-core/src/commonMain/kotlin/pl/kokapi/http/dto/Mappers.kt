@@ -53,6 +53,20 @@ internal fun GeocacheDto.toDomain() = Geocache(
     needsMaintenance = needsMaintenance,
     myNotes = myNotes,
     latestLogs = latestLogs?.map { it.toDomain() } ?: emptyList(),
+    names = names,
+    descriptions = descriptions,
+    shortDescriptions = shortDescriptions,
+    hints2 = hints2,
+    isRecommended = isRecommended,
+    attrAcodes = attrAcodes ?: emptyList(),
+    attrNames = attrNames ?: emptyList(),
+    ocTeamAnnotation = ocTeamAnnotation,
+    attributionNote = attributionNote,
+    distance = distance,
+    bearing = bearing,
+    internalId = internalId,
+    oxsize = oxsize,
+    protectionAreas = protectionAreas,
 )
 
 internal fun CacheImageDto.toDomain() = CacheImage(

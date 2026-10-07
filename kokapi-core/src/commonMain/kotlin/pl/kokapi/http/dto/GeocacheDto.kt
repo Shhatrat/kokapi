@@ -48,6 +48,20 @@ internal data class GeocacheDto(
     @SerialName("needs_maintenance") val needsMaintenance: Boolean? = null,
     @SerialName("my_notes") val myNotes: String? = null,
     @SerialName("latest_logs") val latestLogs: List<GeocacheLogDto>? = null,
+    val names: Map<String, String>? = null,
+    val descriptions: Map<String, String>? = null,
+    @SerialName("short_descriptions") val shortDescriptions: Map<String, String>? = null,
+    val hints2: Map<String, String>? = null,
+    @SerialName("is_recommended") val isRecommended: Boolean? = null,
+    @SerialName("attr_acodes") val attrAcodes: List<String>? = null,
+    @SerialName("attr_names") val attrNames: List<String>? = null,
+    @SerialName("oc_team_annotation") val ocTeamAnnotation: String? = null,
+    @SerialName("attribution_note") val attributionNote: String? = null,
+    val distance: Double? = null,
+    val bearing: String? = null,
+    @SerialName("internal_id") val internalId: Int? = null,
+    val oxsize: Float? = null,
+    @SerialName("protection_areas") val protectionAreas: List<String>? = null,
 )
 
 @Serializable

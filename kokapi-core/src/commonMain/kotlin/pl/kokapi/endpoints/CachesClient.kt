@@ -22,27 +22,71 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         "short_description|images|trackables_count|trackables|alt_wpts|country2|region|rating|" +
         "trip_time|trip_distance|date_hidden|last_modified|is_found|is_not_found|is_watched|" +
         "is_ignored|willattends|watchers|rating_votes|my_rating|needs_maintenance|my_notes|" +
-        "latest_logs"
+        "latest_logs|names|descriptions|short_descriptions|hints2|is_recommended|attr_acodes|" +
+        "attr_names|oc_team_annotation|attribution_note|distance|bearing|internal_id|oxsize|" +
+        "protection_areas"
 
     /** Fetches a single geocache by its OKAPI cache code (e.g. "OP1234"). */
-    suspend fun get(code: String): Geocache {
-        val body = engine.get(
-            "caches/geocache", mapOf(
-                "cache_code" to code,
-                "fields" to defaultFields,
-            )
-        )
+    suspend fun get(
+        code: String,
+        langpref: String? = null,
+        lpc: Int? = null,
+        myLocation: String? = null,
+        userUuid: String? = null,
+        attributionAppend: String? = null,
+        ocTeamAnnotation: String? = null,
+        ownerFields: String? = null,
+        logFields: String? = null,
+        logUserFields: String? = null,
+        userLogsOnly: Boolean = false,
+    ): Geocache {
+        val params = buildMap {
+            put("cache_code", code)
+            put("fields", defaultFields)
+            langpref?.let { put("langpref", it) }
+            lpc?.let { put("lpc", it.toString()) }
+            myLocation?.let { put("my_location", it) }
+            userUuid?.let { put("user_uuid", it) }
+            attributionAppend?.let { put("attribution_append", it) }
+            ocTeamAnnotation?.let { put("oc_team_annotation", it) }
+            ownerFields?.let { put("owner_fields", it) }
+            logFields?.let { put("log_fields", it) }
+            logUserFields?.let { put("log_user_fields", it) }
+            if (userLogsOnly) put("user_logs_only", "true")
+        }
+        val body = engine.get("caches/geocache", params)
         return json.decodeFromString<GeocacheDto>(body).toDomain()
     }
 
     /** Fetches multiple geocaches by their cache codes in a single request. */
-    suspend fun getMultiple(codes: List<String>): List<Geocache> {
-        val body = engine.get(
-            "caches/geocaches", mapOf(
-                "cache_codes" to codes.joinToString("|"),
-                "fields" to defaultFields,
-            )
-        )
+    suspend fun getMultiple(
+        codes: List<String>,
+        langpref: String? = null,
+        lpc: Int? = null,
+        myLocation: String? = null,
+        userUuid: String? = null,
+        attributionAppend: String? = null,
+        ocTeamAnnotation: String? = null,
+        ownerFields: String? = null,
+        logFields: String? = null,
+        logUserFields: String? = null,
+        userLogsOnly: Boolean = false,
+    ): List<Geocache> {
+        val params = buildMap {
+            put("cache_codes", codes.joinToString("|"))
+            put("fields", defaultFields)
+            langpref?.let { put("langpref", it) }
+            lpc?.let { put("lpc", it.toString()) }
+            myLocation?.let { put("my_location", it) }
+            userUuid?.let { put("user_uuid", it) }
+            attributionAppend?.let { put("attribution_append", it) }
+            ocTeamAnnotation?.let { put("oc_team_annotation", it) }
+            ownerFields?.let { put("owner_fields", it) }
+            logFields?.let { put("log_fields", it) }
+            logUserFields?.let { put("log_user_fields", it) }
+            if (userLogsOnly) put("user_logs_only", "true")
+        }
+        val body = engine.get("caches/geocaches", params)
         return json.decodeFromString<Map<String, GeocacheDto>>(body).values.map { it.toDomain() }
     }
 
@@ -406,6 +450,26 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
         status: List<String> = listOf("Available"),
         terrain: String? = null,
         difficulty: String? = null,
+        size2: List<String>? = null,
+        ownerUuid: List<String>? = null,
+        name: String? = null,
+        minRcmds: String? = null,
+        minFounds: Int? = null,
+        maxFounds: Int? = null,
+        modifiedSince: String? = null,
+        foundStatus: String? = null,
+        foundBy: String? = null,
+        notFoundBy: String? = null,
+        recommendedOnly: Boolean = false,
+        recommendedBy: String? = null,
+        watchedOnly: Boolean = false,
+        ignoredStatus: String? = null,
+        excludeMyOwn: Boolean = false,
+        withTrackablesOnly: Boolean = false,
+        ftfHunter: Boolean = false,
+        setAnd: String? = null,
+        rating: String? = null,
+        orderBy: String? = null,
         limit: Int = 100,
         offset: Int = 0,
     ): List<Geocache> {
@@ -416,6 +480,26 @@ class CachesClient internal constructor(private val engine: HttpEngine) {
             type?.let { put("type", it.joinToString("|")) }
             terrain?.let { put("terrain", it) }
             difficulty?.let { put("difficulty", it) }
+            size2?.let { put("size2", it.joinToString("|")) }
+            ownerUuid?.let { put("owner_uuid", it.joinToString("|")) }
+            name?.let { put("name", it) }
+            minRcmds?.let { put("min_rcmds", it) }
+            minFounds?.let { put("min_founds", it.toString()) }
+            maxFounds?.let { put("max_founds", it.toString()) }
+            modifiedSince?.let { put("modified_since", it) }
+            foundStatus?.let { put("found_status", it) }
+            foundBy?.let { put("found_by", it) }
+            notFoundBy?.let { put("not_found_by", it) }
+            if (recommendedOnly) put("recommended_only", "true")
+            recommendedBy?.let { put("recommended_by", it) }
+            if (watchedOnly) put("watched_only", "true")
+            ignoredStatus?.let { put("ignored_status", it) }
+            if (excludeMyOwn) put("exclude_my_own", "true")
+            if (withTrackablesOnly) put("with_trackables_only", "true")
+            if (ftfHunter) put("ftf_hunter", "true")
+            setAnd?.let { put("set_and", it) }
+            rating?.let { put("rating", it) }
+            orderBy?.let { put("order_by", it) }
         }
         val searchParamsJson = buildString {
             append("{")

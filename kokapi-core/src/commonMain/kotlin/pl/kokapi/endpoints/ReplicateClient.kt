@@ -9,16 +9,33 @@ import pl.kokapi.http.dto.toDomain
 import pl.kokapi.http.json
 import pl.kokapi.model.ReplicateInfo
 
+/** The type of object affected by a changelog entry. */
+enum class ChangelogObjectType {
+    GEOCACHE,
+    LOG_ENTRY,
+    UNKNOWN,
+}
+
 /** A single change event in the OKAPI replication changelog. */
 @Serializable
 data class ChangelogEntry(
-    /** Action type, e.g. "replace" or "delete". */
+    /** Action type — "replace" means the object was created/updated, "delete" means it was removed. */
     val action: String,
-    /** Cache code affected by this change, if applicable. */
+    /** Cache code affected by this change, if `object_type` is GEOCACHE. */
     @SerialName("cache_code") val cacheCode: String? = null,
+    /** Log entry UUID affected, if `object_type` is LOG_ENTRY. */
+    @SerialName("log_uuid") val logUuid: String? = null,
+    /** The type of object this change refers to. */
+    @SerialName("object_type") val objectTypeRaw: String? = null,
     /** Finer-grained change category (e.g. "attr_changed"). */
     @SerialName("change_type") val changeType: String? = null,
-)
+) {
+    val objectType: ChangelogObjectType get() = when (objectTypeRaw) {
+        "geocache" -> ChangelogObjectType.GEOCACHE
+        "log_entry" -> ChangelogObjectType.LOG_ENTRY
+        else -> ChangelogObjectType.UNKNOWN
+    }
+}
 
 /** A page of changelog entries returned by [ReplicateClient.changelog]. */
 @Serializable
@@ -48,6 +65,25 @@ class ReplicateClient internal constructor(private val engine: HttpEngine) {
     suspend fun changelog(sinceRevision: Long): Changelog {
         val body = engine.get("replicate/changelog", mapOf("since" to sinceRevision.toString()))
         return json.decodeFromString(body)
+    }
+
+    /**
+     * Returns ALL change events since [sinceRevision], fetching multiple pages automatically.
+     *
+     * Keeps fetching until `more=false`. Use this when you want a complete picture
+     * rather than paging manually.
+     */
+    suspend fun changelogAll(sinceRevision: Long): Changelog {
+        var page = changelog(sinceRevision)
+        if (!page.more) return page
+        val allEntries = page.changelog.toMutableList()
+        var lastRevision = page.revision
+        while (page.more) {
+            page = changelog(lastRevision)
+            allEntries.addAll(page.changelog)
+            lastRevision = page.revision
+        }
+        return Changelog(revision = lastRevision, more = false, changelog = allEntries)
     }
 
     /** Returns the current revision number of the OKAPI database without fetching any entries. */

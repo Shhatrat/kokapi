@@ -9,6 +9,7 @@ import pl.kokapi.KokapiSite
 import pl.kokapi.auth.InMemoryTokenStorage
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class ReplicateClientTest {
@@ -61,5 +62,39 @@ class ReplicateClientTest {
         val json = """{"revision":1962,"more":false,"changelog":[]}"""
         val revision = clientWith(json).replicate.currentRevision()
         assertEquals(1962L, revision)
+    }
+
+    @Test
+    fun changelogEntryHasObjectType() = runTest {
+        val json = """{"revision":100,"more":false,"changelog":[
+            {"action":"replace","cache_code":"OP1","object_type":"geocache","change_type":"attr_changed"},
+            {"action":"replace","log_uuid":"some-uuid","object_type":"log_entry"}
+        ]}"""
+        val result = clientWith(json).replicate.changelog(0L)
+        assertEquals(ChangelogObjectType.GEOCACHE, result.changelog[0].objectType)
+        assertEquals("OP1", result.changelog[0].cacheCode)
+        assertEquals(ChangelogObjectType.LOG_ENTRY, result.changelog[1].objectType)
+        assertEquals("some-uuid", result.changelog[1].logUuid)
+    }
+
+    @Test
+    fun changelogAllFetchesAllPages() = runTest {
+        var callCount = 0
+        val responses = listOf(
+            """{"revision":50,"more":true,"changelog":[{"action":"replace","object_type":"geocache","cache_code":"OP1"}]}""",
+            """{"revision":100,"more":false,"changelog":[{"action":"replace","object_type":"geocache","cache_code":"OP2"}]}""",
+        )
+        val client = KokapiClient(
+            site = KokapiSite.OPENCACHING_PL,
+            consumerKey = "k",
+            tokenStorage = InMemoryTokenStorage(),
+            httpClient = HttpClient(MockEngine {
+                respond(responses[callCount++], HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            })
+        )
+        val result = client.replicate.changelogAll(0L)
+        assertEquals(2, result.changelog.size)
+        assertEquals(100L, result.revision)
+        assertFalse(result.more)
     }
 }
