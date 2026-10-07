@@ -13,12 +13,11 @@ Biblioteka implementuje wszystkie główne endpointy OKAPI wraz z pełnym zestaw
 
 ## ZREALIZOWANE W OSTATNIEJ ITERACJI (2026-10-07)
 
-- `Geocache` i `GeocacheDto` — dodano 15 pól wielojęzycznych i zaawansowanych: `names`, `descriptions`, `shortDescriptions`, `hints2`, `isRecommended`, `attrAcodes`, `attrNames`, `ocTeamAnnotation`, `attributionNote`, `distance`, `bearing`, `internalId`, `oxsize`, `protectionAreas`
-- `CachesClient.get()` / `getMultiple()` — dodano parametry opcjonalne: `langpref`, `lpc`, `myLocation`, `userUuid`, `attributionAppend`, `ocTeamAnnotation`, `ownerFields`, `logFields`, `logUserFields`, `userLogsOnly`
-- `CachesClient.searchAndRetrieve()` — rozbudowano o pełny zestaw filtrów (owner_uuid, name, size2, rating, min_rcmds, found_status, found_by, recommended_only, watched_only, ftf_hunter, set_and itd.)
-- `ReplicateClient` — dodano `ChangelogObjectType` enum, pole `objectTypeRaw`/`objectType` i `logUuid` w `ChangelogEntry`, metodę `changelogAll()` z auto-paginacją
-- `defaultFields` w `CachesClient` — uzupełniono o wszystkie nowe pola
-- Testy: dodano 6 nowych testów (łącznie 105 przechodzi)
+- **Refactor:** metody search/discovery wydzielone z `CachesClient` do nowego `CacheSearchClient` (dostępny jako `KokapiClient.search`)
+- `CacheSearchClient.bboxFlow()` — auto-paginujący Flow dla wyszukiwania bbox
+- `CacheSearchClient.allFlow()` — auto-paginujący Flow dla wyszukiwania site-wide
+- `Callbacks.kt` — rozbudowany z 5 do 16 wrapperów (caches, search, logs, users)
+- 145 testów, 0 błędów
 
 ---
 
@@ -36,12 +35,12 @@ Biblioteka implementuje wszystkie główne endpointy OKAPI wraz z pełnym zestaw
 |---|---|
 | caches/geocache | `CachesClient.get()` |
 | caches/geocaches | `CachesClient.getMultiple()` |
-| caches/search/nearest | `CachesClient.search()` |
-| caches/search/bbox | `CachesClient.bbox()` |
-| caches/search/all | `CachesClient.searchAll()` |
-| caches/search/save | `CachesClient.searchSave()` |
-| caches/search/by_urls | `CachesClient.searchByUrls()` |
-| caches/shortcuts/search_and_retrieve | `CachesClient.searchAndRetrieve()` |
+| caches/search/nearest | `CacheSearchClient.nearest()` + `flow()` |
+| caches/search/bbox | `CacheSearchClient.bbox()` + `bboxFlow()` |
+| caches/search/all | `CacheSearchClient.all()` + `allFlow()` |
+| caches/search/save | `CacheSearchClient.save()` |
+| caches/search/by_urls | `CacheSearchClient.byUrls()` |
+| caches/shortcuts/search_and_retrieve | `CacheSearchClient.andRetrieve()` |
 | caches/mark | `CachesClient.mark()` |
 | caches/save_personal_notes | `CachesClient.savePersonalNotes()` |
 | caches/edit | `CachesClient.edit()` |
