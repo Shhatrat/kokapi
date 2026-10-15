@@ -6,6 +6,35 @@
 
 Supports **Android**, **iOS**, and **Desktop (JVM)**. Full OAuth 1.0a support.
 
+## Installation
+
+Add GitHub Packages repository and the dependency to your `build.gradle.kts`:
+
+```kotlin
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/Shhatrat/kokapi")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation("pl.kokapi:kokapi-core:1.0.0")
+}
+```
+
+GitHub Packages requires authentication. Add your credentials to `~/.gradle/gradle.properties`:
+
+```properties
+gpr.user=YOUR_GITHUB_USERNAME
+gpr.key=YOUR_GITHUB_TOKEN
+```
+
+Generate a token at **GitHub → Settings → Developer settings → Personal access tokens** with the `read:packages` scope.
+
 ## Quickstart
 
 ```kotlin
