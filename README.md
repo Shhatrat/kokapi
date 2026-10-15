@@ -1,4 +1,6 @@
-# KoKAPI
+<p align="center">
+  <img src="logo.svg" alt="KoKAPI" width="270"/>
+</p>
 
 **Kotlin Multiplatform library for the [Opencaching OKAPI](https://opencaching.pl/okapi/introduction.html) REST API.**
 
