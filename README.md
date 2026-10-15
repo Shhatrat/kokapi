@@ -35,6 +35,12 @@ gpr.key=YOUR_GITHUB_TOKEN
 
 Generate a token at **GitHub → Settings → Developer settings → Personal access tokens** with the `read:packages` scope.
 
+## Live Demo
+
+Try the web demo at **https://shhatrat.github.io/kokapi/**
+
+You will need an OKAPI consumer key — register one at **https://opencaching.pl/okapi/signup.html**
+
 ## Quickstart
 
 ```kotlin
