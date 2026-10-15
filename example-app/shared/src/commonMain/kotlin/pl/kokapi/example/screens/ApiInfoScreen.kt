@@ -206,7 +206,7 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
                 replicateError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 replicateInfo?.let { info ->
                     InfoRow("Replicate revision", info.revision.toString())
-                    info.fulldumpUrl?.let { InfoRow("Fulldump URL", it.take(80) + "…") }
+                    info.latestFulldumpRevision?.let { InfoRow("Latest fulldump revision", it.toString()) }
                 }
 
                 Spacer(Modifier.height(8.dp))
@@ -237,7 +237,7 @@ fun ApiInfoScreen(kokapi: KokapiClient) {
                     InfoRow("More pages", cl.more.toString())
                     InfoRow("Entries", cl.changelog.size.toString())
                     cl.changelog.take(5).forEach { entry ->
-                        Text("• ${entry.action} ${entry.objectType.name.lowercase()} ${entry.cacheCode ?: entry.logUuid ?: ""} ${entry.changeType ?: ""}", style = MaterialTheme.typography.bodySmall)
+                        Text("• ${entry.changeType} ${entry.objectType.name.lowercase()} ${entry.cacheCode ?: entry.logUuid ?: ""}", style = MaterialTheme.typography.bodySmall)
                     }
                     if (cl.changelog.size > 5) Text("… and ${cl.changelog.size - 5} more", style = MaterialTheme.typography.bodySmall)
                 }

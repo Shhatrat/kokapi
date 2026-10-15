@@ -625,7 +625,7 @@ private fun CacheDetail(cache: Geocache, kokapi: KokapiClient, onBack: () -> Uni
                 if (cache.recommendations > 0) Text("Recommendations: ${cache.recommendations}")
                 if (cache.watchers > 0) Text("Watchers: ${cache.watchers}")
                 if (cache.willattends > 0) Text("Will attend: ${cache.willattends}")
-                cache.rating?.let { Text("Rating: ${"%.1f".format(it)}") }
+                cache.rating?.let { r -> Text("Rating: ${kotlin.math.round(r * 10).toInt() / 10}.${kotlin.math.round(r * 10).toInt() % 10}") }
                 cache.ratingVotes?.let { Text("Rating votes: $it") }
                 cache.myRating?.let { Text("My rating: $it/5") }
                 cache.isFound?.let { Text("Found by me: $it") }
