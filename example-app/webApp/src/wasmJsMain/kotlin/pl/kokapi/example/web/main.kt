@@ -12,12 +12,14 @@ import pl.kokapi.KokapiClient
 import pl.kokapi.KokapiSite
 import pl.kokapi.example.App
 
+private fun getInitialKey(): String = js("window.__OKAPI_CONSUMER_KEY || ''")
+
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     CanvasBasedWindow(canvasElementId = "ComposeTarget") {
-        val initialKey = js("window.__OKAPI_CONSUMER_KEY || ''") as String
+        val initialKey = remember { getInitialKey() }
         var consumerKey by remember { mutableStateOf(initialKey) }
-        var activeKey by remember { mutableStateOf(if (initialKey.isNotBlank()) initialKey else "") }
+        var activeKey by remember { mutableStateOf(initialKey) }
 
         MaterialTheme {
             if (activeKey.isNotBlank()) {
