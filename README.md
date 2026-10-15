@@ -2,6 +2,10 @@
   <img src="logo.svg" alt="KoKAPI" width="270"/>
 </p>
 
+[![Release](https://img.shields.io/github/v/release/Shhatrat/kokapi)](https://github.com/Shhatrat/kokapi/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/Shhatrat/kokapi/deploy-web.yml?label=web%20deploy)](https://github.com/Shhatrat/kokapi/actions)
+[![License](https://img.shields.io/github/license/Shhatrat/kokapi)](LICENSE)
+
 **Kotlin Multiplatform library for the [Opencaching OKAPI](https://opencaching.pl/okapi/introduction.html) REST API.**
 
 Supports **Android**, **iOS**, and **Desktop (JVM)**. Full OAuth 1.0a support.
