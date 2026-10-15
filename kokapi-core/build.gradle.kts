@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.library)
     alias(libs.plugins.dokka)
+    `maven-publish`
 }
 
 val hostOs = System.getProperty("os.name")
@@ -81,5 +82,31 @@ android {
     compileSdk = 35
     defaultConfig {
         minSdk = 24
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/Shhatrat/kokapi")
+            credentials {
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    publications.withType<MavenPublication> {
+        pom {
+            name.set("KoKAPI")
+            description.set("Kotlin Multiplatform library for the Opencaching OKAPI REST API")
+            url.set("https://github.com/Shhatrat/kokapi")
+            licenses {
+                license {
+                    name.set("MIT License")
+                    url.set("https://opensource.org/licenses/MIT")
+                }
+            }
+        }
     }
 }
